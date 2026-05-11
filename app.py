@@ -52,17 +52,42 @@ if uploaded_file is not None:
                 
         # 3. Filtro: Múltiplos Cód. Confeccionado
         if 'Cód Confec' in df_filtered.columns:
-            # Pegar todos os códigos únicos (removendo nulos se houver)
-            cods = df_filtered['Cód Confec'].dropna().unique().tolist()
-            try:
-                cods.sort()
-            except TypeError: # Se houver mistura de strings e ints
-                cods = [str(c) for c in cods]
-                cods.sort()
-                # Converter a coluna original para string também para fazer o filtro funcionar de forma homogênea
-                df_filtered['Cód Confec'] = df_filtered['Cód Confec'].astype(str)
+            # Converter a coluna original para string de forma consistente (removendo .0 de floats)
+            df_filtered['Cód Confec'] = df_filtered['Cód Confec'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
             
-            selecionados_cods = st.sidebar.multiselect("Cód. Confeccionado (Múltiplos):", options=cods)
+            # Pegar todos os códigos únicos (removendo 'nan' se houver)
+            cods = [c for c in df_filtered['Cód Confec'].unique().tolist() if c.lower() != 'nan']
+            cods.sort()
+            
+            st.sidebar.markdown("---")
+            st.sidebar.markdown("**Filtro Avançado: Cód. Confeccionado**")
+            arquivo_cods = st.sidebar.file_uploader("Upload Excel com lista de códigos", type=["xlsx", "xls"], key="upload_cods")
+            
+            codigos_do_arquivo = []
+            if arquivo_cods is not None:
+                try:
+                    df_cods = pd.read_excel(arquivo_cods)
+                    # Procurar coluna 'Cód Confec' ou usar a primeira coluna
+                    if 'Cód Confec' in df_cods.columns:
+                        serie_cods = df_cods['Cód Confec']
+                    else:
+                        serie_cods = df_cods.iloc[:, 0]
+                        
+                    # Converter a série para string, limpando espaços e '.0'
+                    serie_cods = serie_cods.astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
+                    codigos_do_arquivo = [c for c in serie_cods.tolist() if c.lower() != 'nan']
+                    
+                    # Manter apenas códigos que existem nas opções originais
+                    codigos_do_arquivo = [c for c in codigos_do_arquivo if c in cods]
+                    
+                    if codigos_do_arquivo:
+                        st.sidebar.success(f"{len(codigos_do_arquivo)} código(s) válido(s) encontrado(s) na lista.")
+                    else:
+                        st.sidebar.warning("Nenhum código correspondente encontrado. Verifique se os códigos da lista realmente existem no banco de dados principal.")
+                except Exception as e:
+                    st.sidebar.error(f"Erro ao ler o arquivo de códigos: {e}")
+
+            selecionados_cods = st.sidebar.multiselect("Cód. Confeccionado (Múltiplos):", options=cods, default=codigos_do_arquivo)
             
             # Se selecionou algum, aplica o filtro; senão, mostra todos (comportamento padrão)
             if selecionados_cods:
