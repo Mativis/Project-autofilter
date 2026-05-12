@@ -34,8 +34,8 @@ if uploaded_file is not None:
         
         # 1. Filtro: Agrupar/Filtrar por confecção
         if 'Confeccao' in df_filtered.columns:
-            # Preencher valores nulos temporariamente para não dar erro na interface
-            df_filtered['Confeccao'] = df_filtered['Confeccao'].fillna("Vazio")
+            # Converter toda a coluna para string para evitar erro de tipos mistos
+            df_filtered['Confeccao'] = df_filtered['Confeccao'].fillna("Vazio").astype(str)
             confeccoes = df_filtered['Confeccao'].unique().tolist()
             confeccoes.sort(key=str)
             selecionadas_confeccoes = st.sidebar.multiselect("Filtrar por Confecção:", options=confeccoes, default=confeccoes)
@@ -47,16 +47,16 @@ if uploaded_file is not None:
             termo_busca = st.sidebar.text_input("Contém no nome Confeccionado:", value="")
             if termo_busca:
                 # Garantir que é string para aplicar o contains
-                df_filtered['Confeccionado'] = df_filtered['Confeccionado'].astype(str)
+                df_filtered['Confeccionado'] = df_filtered['Confeccionado'].fillna("").astype(str)
                 df_filtered = df_filtered[df_filtered['Confeccionado'].str.contains(termo_busca, case=False, na=False)]
                 
         # 3. Filtro: Múltiplos Cód. Confeccionado
         if 'Cód Confec' in df_filtered.columns:
             # Converter a coluna original para string de forma consistente (removendo .0 de floats)
-            df_filtered['Cód Confec'] = df_filtered['Cód Confec'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
+            df_filtered['Cód Confec'] = df_filtered['Cód Confec'].fillna("").astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
             
-            # Pegar todos os códigos únicos (removendo 'nan' se houver)
-            cods = [c for c in df_filtered['Cód Confec'].unique().tolist()]
+            # Pegar todos os códigos únicos (removendo strings vazias)
+            cods = [c for c in df_filtered['Cód Confec'].unique().tolist() if c and c != '']
             cods.sort()
             
             st.sidebar.markdown("---")
@@ -74,8 +74,8 @@ if uploaded_file is not None:
                         serie_cods = df_cods.iloc[:, 0]
                         
                     # Converter a série para string, limpando espaços e '.0'
-                    serie_cods = serie_cods.astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
-                    codigos_do_arquivo = [c for c in serie_cods.tolist() if c.lower() != 'nan']
+                    serie_cods = serie_cods.fillna("").astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
+                    codigos_do_arquivo = [c for c in serie_cods.tolist() if c and c.lower() != 'nan']
                     
                     # Manter apenas códigos que existem nas opções originais
                     codigos_do_arquivo = [c for c in codigos_do_arquivo if c in cods]
@@ -115,11 +115,13 @@ if uploaded_file is not None:
             col4.metric("Soma de Saldo", f"{df_filtered['Saldo'].sum():.0f}")
 
         if 'Confeccao' in df_filtered.columns:
+            # Garantir que a coluna Confeccao seja string e remover valores vazios
+            df_filtered['Confeccao'] = df_filtered['Confeccao'].astype(str)
             confeccoes_unicas = df_filtered['Confeccao'].dropna().unique().tolist()
-            confeccoes_unicas = [str(c) for c in confeccoes_unicas]
+            confeccoes_unicas = [c for c in confeccoes_unicas if c and c != 'nan' and c != '']
             confeccoes_unicas.sort()
             
-            nomes_abas = ["📋 Visão Geral", "📊 Resumo Agrupado"] + [f"📁 Aba {conf}" for conf in confeccoes_unicas]
+            nomes_abas = ["📋 Visão Geral", "📊 Resumo Agrupado"] + [f"📁 {conf}" for conf in confeccoes_unicas]
             abas = st.tabs(nomes_abas)
             
             with abas[0]:
@@ -134,7 +136,7 @@ if uploaded_file is not None:
                     
             for i, conf in enumerate(confeccoes_unicas):
                 with abas[i+2]:
-                    df_aba = df_filtered[df_filtered['Confeccao'].astype(str) == conf]
+                    df_aba = df_filtered[df_filtered['Confeccao'] == conf]
                     st.dataframe(df_aba, use_container_width=True, hide_index=True)
         else:
             st.dataframe(df_filtered, use_container_width=True, hide_index=True)
@@ -148,7 +150,9 @@ if uploaded_file is not None:
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
             df_filtered.to_excel(writer, sheet_name='Filtrado', index=False)
             if 'Confeccao' in df_filtered.columns and cols_numericas:
-                df_agrupado.to_excel(writer, sheet_name='Agrupado', index=False)
+                # Verificar se df_agrupado existe antes de tentar salvar
+                if 'df_agrupado' in locals():
+                    df_agrupado.to_excel(writer, sheet_name='Agrupado', index=False)
                 
         col_btn1, col_btn2 = st.columns([1, 3])
         with col_btn1:
