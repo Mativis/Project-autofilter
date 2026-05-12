@@ -56,7 +56,7 @@ if uploaded_file is not None:
             df_filtered['Cód Confec'] = df_filtered['Cód Confec'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
             
             # Pegar todos os códigos únicos (removendo 'nan' se houver)
-            cods = [c for c in df_filtered['Cód Confec'].unique().tolist() if c.lower() != 'nan']
+            cods = [c for c in df_filtered['Cód Confec'].unique().tolist()
             cods.sort()
             
             st.sidebar.markdown("---")
