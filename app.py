@@ -102,7 +102,28 @@ if uploaded_file is not None:
             # Certificar que as colunas são numéricas
             for col in cols_numericas:
                 df_filtered[col] = pd.to_numeric(df_filtered[col], errors='coerce').fillna(0)
-                
+        
+        # NOVA FUNÇÃO: Filtrar linhas onde Qtd Ret é inferior a 95% da Qtd
+        if 'Qtd' in df_filtered.columns and 'Qtd Ret' in df_filtered.columns:
+            # Calcular o percentual de Qtd Ret em relação à Qtd
+            # Evitar divisão por zero onde Qtd for 0
+            mask = df_filtered['Qtd'] > 0
+            df_filtered['Percentual_Ret'] = 0.0
+            df_filtered.loc[mask, 'Percentual_Ret'] = (df_filtered.loc[mask, 'Qtd Ret'] / df_filtered.loc[mask, 'Qtd']) * 100
+            
+            # Aplicar filtro: manter apenas linhas onde percentual é MENOR que 95%
+            linhas_before = len(df_filtered)
+            df_filtered = df_filtered[df_filtered['Percentual_Ret'] < 95]
+            linhas_after = len(df_filtered)
+            
+            # Remover a coluna auxiliar Percentual_Ret
+            df_filtered = df_filtered.drop(columns=['Percentual_Ret'])
+            
+            # Informar ao usuário quantas linhas foram removidas
+            linhas_removidas = linhas_before - linhas_after
+            if linhas_removidas > 0:
+                st.info(f"ℹ️ {linhas_removidas} linha(s) removida(s) por terem Qtd Ret ≥ 95% da Qtd.")
+        
         # Exibir Métricas no topo
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("Total de Registros", len(df_filtered))
