@@ -336,7 +336,7 @@ with tab_agendamento:
                 'cliente': row['Cliente'],
                 'qtd': row['Qtd'],
                 'saldo_atual': row['Saldo Atual'],
-                'saldo_calculado': row['Saldo Calculado'],
+                'saldo_calculado': row['Saldo Calc.'],
                 'valor': row['R$ Total'],
                 'status': status_text,
                 'status_class': status_class,
