@@ -23,7 +23,7 @@ with tab_confeccao:
             # Carregar a planilha
             df = pd.read_excel(uploaded_file)
             
-            # Limpar os nomes das colunas (remover espaços em branco no início e no fim) para facilitar
+            # Limpar os nomes das colunas (remover espaços em branco no início e ao fim)
             df.columns = df.columns.str.strip()
             
             # Colunas esperadas no relatório
@@ -269,10 +269,12 @@ with tab_agendamento:
             st.warning("Coluna 'Cliente' não encontrada no arquivo.")
             return
             
-        clients = df_filtered['Cliente'].unique()
+        # Converter Cliente para string e ordenar com tratamento seguro
+        df_filtered['Cliente_str'] = df_filtered['Cliente'].fillna("Desconhecido").astype(str)
+        clients = sorted(df_filtered['Cliente_str'].unique(), key=str)
         
-        for client in sorted(clients):
-            df_client = df_filtered[df_filtered['Cliente'] == client]
+        for client in clients:
+            df_client = df_filtered[df_filtered['Cliente_str'] == client]
             
             with st.container():
                 st.markdown(f"### 👤 {client}")
