@@ -273,7 +273,7 @@ with tab_agendamento:
                         status_text, status_class = get_status(
                             row['Qtd'], 
                             row['Saldo Atual'], 
-                            row['Saldo Calculado']
+                            row['Saldo Calc.']
                         )
                         
                         # Determinar cor da borda baseado no status
@@ -327,7 +327,7 @@ with tab_agendamento:
             status_text, status_class = get_status(
                 row['Qtd'], 
                 row['Saldo Atual'], 
-                row['Saldo Calculado']
+                row['Saldo Calc.']
             )
             
             agendamentos[data].append({
@@ -494,7 +494,7 @@ with tab_agendamento:
             
             # Adicionar coluna de status para filtro
             df_filtered['Status'] = df_filtered.apply(
-                lambda row: get_status(row['Qtd'], row['Saldo Atual'], row['Saldo Calculado'])[0],
+                lambda row: get_status(row['Qtd'], row['Saldo Atual'], row['Saldo Calc.'])[0],
                 axis=1
             )
             
