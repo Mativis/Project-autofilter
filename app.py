@@ -238,7 +238,8 @@ with tab_agendamento:
         try:
             df = pd.read_excel(file_path)
             df.columns = df.columns.str.strip()
-            df['Dt. Agendamento'] = pd.to_datetime(df['Dt. Agendamento'], errors='coerce')
+            if 'Dt. Agendamento' in df.columns:
+                df['Dt. Agendamento'] = pd.to_datetime(df['Dt. Agendamento'], errors='coerce')
             return df
         except Exception as e:
             st.error(f"Erro ao carregar arquivo: {e}")
@@ -247,16 +248,27 @@ with tab_agendamento:
     # Função para determinar status
     def get_status(qtd, saldo_atual, saldo_calculado):
         """Determina o status do pedido baseado nas quantidades"""
-        if qtd > saldo_calculado:
-            return "PRIORIDADE", "prioridade"
-        elif qtd > saldo_atual:
-            return "ATENÇÃO", "atencao"
-        else:
+        try:
+            qtd = float(qtd) if pd.notna(qtd) else 0
+            saldo_atual = float(saldo_atual) if pd.notna(saldo_atual) else 0
+            saldo_calculado = float(saldo_calculado) if pd.notna(saldo_calculado) else 0
+            
+            if qtd > saldo_calculado:
+                return "PRIORIDADE", "prioridade"
+            elif qtd > saldo_atual:
+                return "ATENÇÃO", "atencao"
+            else:
+                return "OK", "ok"
+        except:
             return "OK", "ok"
     
     # Função para criar cards de pedidos agrupados por cliente
     def create_client_cards(df_filtered):
         """Cria cards agrupados por cliente"""
+        if 'Cliente' not in df_filtered.columns:
+            st.warning("Coluna 'Cliente' não encontrada no arquivo.")
+            return
+            
         clients = df_filtered['Cliente'].unique()
         
         for client in sorted(clients):
@@ -270,11 +282,12 @@ with tab_agendamento:
                     col_idx = idx % 3
                     
                     with cols[col_idx]:
-                        status_text, status_class = get_status(
-                            row['Qtd'], 
-                            row['Saldo Atual'], 
-                            row['Saldo Calc.']
-                        )
+                        # Verificar se colunas necessárias existem
+                        qtd = row.get('Qtd', 0)
+                        saldo_atual = row.get('Saldo Atual', 0)
+                        saldo_calc = row.get('Saldo Calc.', 0)
+                        
+                        status_text, status_class = get_status(qtd, saldo_atual, saldo_calc)
                         
                         # Determinar cor da borda baseado no status
                         if status_class == "prioridade":
@@ -284,26 +297,42 @@ with tab_agendamento:
                         else:
                             border_color = "#4caf50"
                         
+                        # Formatar data se existir
+                        data_str = "N/A"
+                        if 'Dt. Agendamento' in row and pd.notna(row['Dt. Agendamento']):
+                            try:
+                                data_str = row['Dt. Agendamento'].strftime('%d/%m/%Y')
+                            except:
+                                data_str = str(row['Dt. Agendamento'])
+                        
+                        # Formatar valor se existir
+                        valor_str = "N/A"
+                        if 'R$ Total Calc.' in row and pd.notna(row['R$ Total Calc.']):
+                            try:
+                                valor_str = f"R$ {float(row['R$ Total Calc.']):.2f}"
+                            except:
+                                valor_str = str(row['R$ Total Calc.'])
+                        
                         st.markdown(f"""
                             <div class="card" style="border-left: 4px solid {border_color};">
-                                <div class="card-header">Pedido #{row['Pedido']}</div>
+                                <div class="card-header">Pedido #{row.get('Pedido', 'N/A')}</div>
                                 <div style="margin-bottom: 10px;">
                                     <span class="status-badge badge-{status_class}">{status_text}</span>
                                 </div>
                                 <div style="font-size: 12px; margin-bottom: 8px;">
-                                    <b>Produto:</b> {row['Produto']}<br>
-                                    <b>Cód:</b> {row['Cód Prod']}<br>
-                                    <b>Data:</b> {row['Dt. Agendamento'].strftime('%d/%m/%Y') if pd.notna(row['Dt. Agendamento']) else 'N/A'}<br>
-                                    <b>Coleção:</b> {row['Coleção']}<br>
-                                    <b>Operação:</b> {row['Operação Produtiva']}<br>
-                                    <b>Segmento:</b> {row['Segmento']}
+                                    <b>Produto:</b> {row.get('Produto', 'N/A')}<br>
+                                    <b>Cód:</b> {row.get('Cód Prod', 'N/A')}<br>
+                                    <b>Data:</b> {data_str}<br>
+                                    <b>Coleção:</b> {row.get('Coleção', 'N/A')}<br>
+                                    <b>Operação:</b> {row.get('Operação Produtiva', 'N/A')}<br>
+                                    <b>Segmento:</b> {row.get('Segmento', 'N/A')}
                                 </div>
                                 <hr style="margin: 8px 0;">
                                 <div style="font-size: 11px;">
-                                    <b>Quantidade Pedida:</b> {row['Qtd']}<br>
-                                    <b>Saldo Atual:</b> {row['Saldo Atual']}<br>
-                                    <b>Saldo Calculado:</b> {row['Saldo Calculado']}<br>
-                                    <b>Valor Total:</b> R$ {row['R$ Total']:.2f}
+                                    <b>Quantidade Pedida:</b> {qtd}<br>
+                                    <b>Saldo Atual:</b> {saldo_atual}<br>
+                                    <b>Saldo Calculado:</b> {saldo_calc}<br>
+                                    <b>Valor Total:</b> {valor_str}
                                 </div>
                             </div>
                         """, unsafe_allow_html=True)
@@ -311,6 +340,11 @@ with tab_agendamento:
     # Função para criar visualização de calendário
     def create_calendar_view(df_filtered):
         """Cria visualização de calendário com pedidos agrupados por data"""
+        
+        # Verificar se coluna de data existe
+        if 'Dt. Agendamento' not in df_filtered.columns:
+            st.warning("Coluna 'Dt. Agendamento' não encontrada no arquivo.")
+            return
         
         # Agrupar pedidos por data
         df_filtered_clean = df_filtered.dropna(subset=['Dt. Agendamento'])
@@ -323,26 +357,30 @@ with tab_agendamento:
         agendamentos = defaultdict(list)
         
         for _, row in df_filtered_clean.iterrows():
-            data = row['Dt. Agendamento'].date()
-            status_text, status_class = get_status(
-                row['Qtd'], 
-                row['Saldo Atual'], 
-                row['Saldo Calc.']
-            )
+            try:
+                data = row['Dt. Agendamento'].date()
+            except:
+                continue
+                
+            qtd = row.get('Qtd', 0)
+            saldo_atual = row.get('Saldo Atual', 0)
+            saldo_calc = row.get('Saldo Calc.', 0)
+            
+            status_text, status_class = get_status(qtd, saldo_atual, saldo_calc)
             
             agendamentos[data].append({
-                'pedido': row['Pedido'],
-                'produto': row['Produto'],
-                'cliente': row['Cliente'],
-                'qtd': row['Qtd'],
-                'saldo_atual': row['Saldo Atual'],
-                'saldo_calculado': row['Saldo Calc.'],
-                'valor': row['R$ Total'],
+                'pedido': row.get('Pedido', 'N/A'),
+                'produto': row.get('Produto', 'N/A'),
+                'cliente': row.get('Cliente', 'N/A'),
+                'qtd': qtd,
+                'saldo_atual': saldo_atual,
+                'saldo_calculado': saldo_calc,
+                'valor': row.get('R$ Total Calc.', 0),
                 'status': status_text,
                 'status_class': status_class,
-                'colecao': row['Coleção'],
-                'operacao': row['Operação Produtiva'],
-                'segmento': row['Segmento']
+                'colecao': row.get('Coleção', 'N/A'),
+                'operacao': row.get('Operação Produtiva', 'N/A'),
+                'segmento': row.get('Segmento', 'N/A')
             })
         
         # Criar visualização de calendário
@@ -405,6 +443,7 @@ with tab_agendamento:
                                                expanded=False):
                                     for pedido in pedidos_dia:
                                         status_badge_class = f"badge-{pedido['status_class']}"
+                                        valor_formatado = f"R$ {float(pedido['valor']):.2f}" if pedido['valor'] else "N/A"
                                         st.markdown(f"""
                                             <div style="margin-bottom: 10px; padding: 8px; border-left: 3px solid #ddd; background-color: #f5f5f5;">
                                                 <b>Pedido #{pedido['pedido']}</b><br>
@@ -415,7 +454,7 @@ with tab_agendamento:
                                                     <b>Qtd Pedida:</b> {pedido['qtd']}<br>
                                                     <b>Saldo Atual:</b> {pedido['saldo_atual']}<br>
                                                     <b>Saldo Calc:</b> {pedido['saldo_calculado']}<br>
-                                                    <b>Valor:</b> R$ {pedido['valor']:.2f}<br>
+                                                    <b>Valor:</b> {valor_formatado}<br>
                                                     <b>Operação:</b> {pedido['operacao']}<br>
                                                     <b>Segmento:</b> {pedido['segmento']}<br>
                                                     <b>Coleção:</b> {pedido['colecao']}
@@ -431,43 +470,58 @@ with tab_agendamento:
         "Carregue o arquivo Excel com os pedidos",
         type=['xlsx', 'xls'],
         key="agendamento_file",
-        help="Arquivo deve conter as colunas: Pedido, Cliente, Cód Prod, Produto, Qtd, R$ Total, Operação Produtiva, Segmento, Saldo Atual, Coleção, Saldo Calculado, Dt. Agendamento"
+        help="Arquivo deve conter as colunas: Pedido, Cliente, Cód Prod, Produto, Qtd, R$ Total Calc., Operação Produtiva, Segmento, Saldo Atual, Coleção, Saldo Calc., Dt. Agendamento"
     )
     
     if uploaded_file_agendamento:
         df = load_data_agendamento(uploaded_file_agendamento)
         
         if df is not None and not df.empty:
+            # Exibir colunas disponíveis para debug
+            st.sidebar.write("Colunas do arquivo:", list(df.columns))
+            
             # Filtros na sidebar
             st.sidebar.header("🔍 Filtros - Agendamento")
             
             # Filtro por Operação Produtiva
-            operacoes = st.sidebar.multiselect(
-                "Operação Produtiva",
-                options=df['Operação Produtiva'].unique(),
-                help="Selecione uma ou mais operações"
-            )
+            if 'Operação Produtiva' in df.columns:
+                operacoes = st.sidebar.multiselect(
+                    "Operação Produtiva",
+                    options=df['Operação Produtiva'].unique(),
+                    help="Selecione uma ou mais operações"
+                )
+            else:
+                operacoes = []
             
             # Filtro por Segmento
-            segmentos = st.sidebar.multiselect(
-                "Segmento",
-                options=df['Segmento'].unique(),
-                help="Selecione um ou mais segmentos"
-            )
+            if 'Segmento' in df.columns:
+                segmentos = st.sidebar.multiselect(
+                    "Segmento",
+                    options=df['Segmento'].unique(),
+                    help="Selecione um ou mais segmentos"
+                )
+            else:
+                segmentos = []
             
             # Filtro por Coleção
-            colecoes = st.sidebar.multiselect(
-                "Coleção",
-                options=df['Coleção'].unique(),
-                help="Selecione uma ou mais coleções"
-            )
+            if 'Coleção' in df.columns:
+                colecoes = st.sidebar.multiselect(
+                    "Coleção",
+                    options=df['Coleção'].unique(),
+                    help="Selecione uma ou mais coleções"
+                )
+            else:
+                colecoes = []
             
             # Filtro por Cliente
-            clientes = st.sidebar.multiselect(
-                "Cliente",
-                options=df['Cliente'].unique(),
-                help="Selecione um ou mais clientes"
-            )
+            if 'Cliente' in df.columns:
+                clientes = st.sidebar.multiselect(
+                    "Cliente",
+                    options=df['Cliente'].unique(),
+                    help="Selecione um ou mais clientes"
+                )
+            else:
+                clientes = []
             
             # Filtro por Status
             status_filtro = st.sidebar.multiselect(
@@ -480,25 +534,29 @@ with tab_agendamento:
             # Aplicar filtros
             df_filtered = df.copy()
             
-            if operacoes:
+            if operacoes and 'Operação Produtiva' in df_filtered.columns:
                 df_filtered = df_filtered[df_filtered['Operação Produtiva'].isin(operacoes)]
             
-            if segmentos:
+            if segmentos and 'Segmento' in df_filtered.columns:
                 df_filtered = df_filtered[df_filtered['Segmento'].isin(segmentos)]
             
-            if colecoes:
+            if colecoes and 'Coleção' in df_filtered.columns:
                 df_filtered = df_filtered[df_filtered['Coleção'].isin(colecoes)]
             
-            if clientes:
+            if clientes and 'Cliente' in df_filtered.columns:
                 df_filtered = df_filtered[df_filtered['Cliente'].isin(clientes)]
             
-            # Adicionar coluna de status para filtro
-            df_filtered['Status'] = df_filtered.apply(
-                lambda row: get_status(row['Qtd'], row['Saldo Atual'], row['Saldo Calc.'])[0],
-                axis=1
-            )
-            
-            df_filtered = df_filtered[df_filtered['Status'].isin(status_filtro)]
+            # Adicionar coluna de status para filtro (com tratamento de erro)
+            if 'Qtd' in df_filtered.columns and 'Saldo Atual' in df_filtered.columns and 'Saldo Calc.' in df_filtered.columns:
+                df_filtered['Status'] = df_filtered.apply(
+                    lambda row: get_status(row['Qtd'], row['Saldo Atual'], row['Saldo Calc.'])[0],
+                    axis=1
+                )
+                df_filtered = df_filtered[df_filtered['Status'].isin(status_filtro)]
+            else:
+                st.error("❌ Colunas necessárias não encontradas: 'Qtd', 'Saldo Atual' ou 'Saldo Calc.'")
+                st.info("Por favor, verifique se o arquivo contém todas as colunas necessárias.")
+                st.stop()
             
             # Exibir resumo dos dados
             col1, col2, col3, col4 = st.columns(4)
@@ -539,17 +597,20 @@ with tab_agendamento:
             st.markdown("---")
             st.subheader("📋 Tabela Detalhada")
             
-            # Preparar dados para exibição
-            df_display = df_filtered[[
+            # Preparar dados para exibição com colunas que existem
+            display_cols = [col for col in [
                 'Pedido', 'Cliente', 'Cód Prod', 'Produto', 'Qtd', 
-                'Saldo Atual', 'Saldo Calculado', 'R$ Total', 
+                'Saldo Atual', 'Saldo Calc.', 'R$ Total Calc.', 
                 'Operação Produtiva', 'Segmento', 'Coleção', 'Dt. Agendamento', 'Status'
-            ]].copy()
+            ] if col in df_filtered.columns]
             
-            df_display['Dt. Agendamento'] = df_display['Dt. Agendamento'].dt.strftime('%d/%m/%Y')
+            df_display = df_filtered[display_cols].copy()
+            
+            if 'Dt. Agendamento' in df_display.columns:
+                df_display['Dt. Agendamento'] = df_display['Dt. Agendamento'].dt.strftime('%d/%m/%Y')
             
             st.dataframe(
-                df_display.sort_values('Pedido'),
+                df_display.sort_values('Pedido') if 'Pedido' in df_display.columns else df_display,
                 use_container_width=True,
                 hide_index=True
             )
@@ -574,17 +635,17 @@ with tab_agendamento:
             - **Cód Prod** - Código do produto
             - **Produto** - Nome do produto
             - **Qtd** - Quantidade solicitada
-            - **R$ Total** - Valor total do pedido
+            - **R$ Total Calc.** - Valor total do pedido (calculado)
             - **Operação Produtiva** - Tipo de operação
             - **Segmento** - Segmento de mercado
             - **Saldo Atual** - Estoque atual disponível
             - **Coleção** - Coleção do produto
-            - **Saldo Calculado** - Estoque calculado/projetado
+            - **Saldo Calc.** - Estoque calculado/projetado
             - **Dt. Agendamento** - Data do agendamento (formato: DD/MM/YYYY)
             
             ### 📊 Como a priorização funciona:
             
-            - 🔴 **PRIORIDADE**: Quando Qtd > Saldo Calculado (sem estoque previsão)
+            - 🔴 **PRIORIDADE**: Quando Qtd > Saldo Calc. (sem estoque previsão)
             - 🟠 **ATENÇÃO**: Quando Qtd > Saldo Atual (sem estoque atual)
             - 🟢 **OK**: Quando há estoque suficiente
         """)
