@@ -243,6 +243,15 @@ st.markdown("""
         .action-button {
             margin-top: 10px;
         }
+        
+        /* Info box */
+        .info-box {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #2196f3;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -296,6 +305,32 @@ def get_client_status(pedidos_df):
                 return "OK", "ok", 1
     return "OK", "ok", 1
 
+def filter_by_qtd_ret_percent(df, qtd_col='Qtd', qtd_ret_col='Qtd Ret', threshold=95):
+    """Filtra linhas onde Qtd Ret é menor que threshold% da Qtd"""
+    if qtd_col not in df.columns or qtd_ret_col not in df.columns:
+        return df
+    
+    df_filtered = df.copy()
+    
+    # Converter para numérico
+    df_filtered[qtd_col] = pd.to_numeric(df_filtered[qtd_col], errors='coerce').fillna(0)
+    df_filtered[qtd_ret_col] = pd.to_numeric(df_filtered[qtd_ret_col], errors='coerce').fillna(0)
+    
+    # Calcular percentual
+    mask = df_filtered[qtd_col] > 0
+    df_filtered['percentual_ret'] = 0.0
+    df_filtered.loc[mask, 'percentual_ret'] = (df_filtered.loc[mask, qtd_ret_col] / df_filtered.loc[mask, qtd_col]) * 100
+    
+    # Filtrar (manter apenas linhas com percentual < threshold)
+    linhas_antes = len(df_filtered)
+    df_filtered = df_filtered[df_filtered['percentual_ret'] < threshold]
+    linhas_removidas = linhas_antes - len(df_filtered)
+    
+    # Remover coluna auxiliar
+    df_filtered = df_filtered.drop(columns=['percentual_ret'])
+    
+    return df_filtered, linhas_removidas
+
 # ==================== FUNÇÃO DE TABELA DE DETALHES ====================
 def show_detail_table(df_detalhes, title="📋 Detalhamento dos Pedidos", filter_info=None):
     """Exibe tabela detalhada com formatação profissional"""
@@ -335,6 +370,10 @@ def show_detail_table(df_detalhes, title="📋 Detalhamento dos Pedidos", filter
     if 'Qtd' in df_detalhes.columns:
         display_cols.append('Qtd')
         column_config['Qtd'] = st.column_config.NumberColumn("Quantidade", format="%d")
+    
+    if 'Qtd Ret' in df_detalhes.columns:
+        display_cols.append('Qtd Ret')
+        column_config['Qtd Ret'] = st.column_config.NumberColumn("Qtd Retorno", format="%d")
     
     if 'Saldo Atual' in df_detalhes.columns:
         display_cols.append('Saldo Atual')
@@ -755,22 +794,24 @@ def main():
         modulo = st.radio(
             "Selecione o módulo:",
             ["📋 Filtro de Confecção", "📅 Agendamento de Pedidos", "📊 Dashboard"],
-            index=1
+            index=0
         )
         
         st.markdown("---")
         
         with st.expander("ℹ️ Sobre o Sistema"):
             st.markdown("""
-                **Versão:** 4.3  
+                **Versão:** 5.0  
                 **Desenvolvido para:** Gestão de Confecção  
                 
                 ### Funcionalidades:
+                - ✅ Filtro avançado por código de confecção
+                - ✅ Upload de lista em Excel para filtro
+                - ✅ Agrupamento em abas por confecção
+                - ✅ Ocultação automática (Qtd Ret > 95% da Qtd)
                 - ✅ Cards com status do cliente
-                - ✅ Tabela detalhada por cliente
-                - ✅ Calendário com tabela por data
+                - ✅ Calendário interativo
                 - ✅ 3 abas organizadas
-                - ✅ Filtros dinâmicos
             """)
         
         st.markdown("---")
@@ -783,26 +824,33 @@ def main():
     
     # Conteúdo
     if modulo == "📋 Filtro de Confecção":
-        render_Confecção()
+        render_confeccao()
     elif modulo == "📅 Agendamento de Pedidos":
         render_agendamento()
     else:
         render_dashboard()
 
-def render_Confecção():
-    """Renderiza o módulo de filtro de confecção"""
+def render_confeccao():
+    """Renderiza o módulo de filtro de confecção com filtro avançado e agrupamento em abas"""
     st.markdown("## 📋 Filtro de Dados de Confecção")
     st.markdown("Faça o upload do seu banco de dados em Excel para começar.")
     
-    uploaded_file = st.file_uploader("Selecione o arquivo Excel", type=["xlsx", "xls"], key="Confecção_file")
+    uploaded_file = st.file_uploader("Selecione o arquivo Excel", type=["xlsx", "xls"], key="confeccao_file")
     
     if uploaded_file is not None:
         try:
             df = pd.read_excel(uploaded_file)
             df.columns = df.columns.str.strip()
             
+            st.success(f"✅ Arquivo carregado! {len(df)} registros encontrados.")
+            
+            # Colunas esperadas
             expected_columns = ['Compra', 'Cód Confec', 'Confeccionado', 'Qtd', 'Qtd Ret', 'Saldo', 'Confecção']
             available_cols = [col for col in expected_columns if col in df.columns]
+            missing_cols = [col for col in expected_columns if col not in df.columns]
+            
+            if missing_cols:
+                st.warning(f"⚠️ Colunas não encontradas: {', '.join(missing_cols)}")
             
             if not available_cols:
                 st.error("Nenhuma coluna esperada encontrada no arquivo.")
@@ -811,24 +859,103 @@ def render_Confecção():
             
             df_filtered = df[available_cols].copy()
             
-            # Filtros
-            st.sidebar.markdown("## 🔍 Filtros")
+            # Aplicar regra de Qtd Ret (ocultar linhas com Qtd Ret > 95% da Qtd)
+            linhas_removidas = 0
+            if 'Qtd' in df_filtered.columns and 'Qtd Ret' in df_filtered.columns:
+                df_filtered, linhas_removidas = filter_by_qtd_ret_percent(df_filtered, 'Qtd', 'Qtd Ret', 95)
+                if linhas_removidas > 0:
+                    st.info(f"ℹ️ {linhas_removidas} linha(s) removida(s) por terem Qtd Ret ≥ 95% da Qtd.")
             
+            # ==================== SIDEBAR FILTERS ====================
+            st.sidebar.markdown("## 🔍 Filtros da Confecção")
+            
+            # Filtro 1: Por Confecção
             if 'Confecção' in df_filtered.columns:
                 df_filtered['Confecção'] = df_filtered['Confecção'].fillna("Vazio").astype(str)
                 confeccoes = sorted(df_filtered['Confecção'].unique())
-                selecionadas = st.sidebar.multiselect("Confecção:", options=confeccoes, default=confeccoes)
-                if selecionadas:
-                    df_filtered = df_filtered[df_filtered['Confecção'].isin(selecionadas)]
+                confeccoes_selecionadas = st.sidebar.multiselect(
+                    "Filtrar por Confecção:", 
+                    options=confeccoes, 
+                    default=confeccoes
+                )
+                if confeccoes_selecionadas:
+                    df_filtered = df_filtered[df_filtered['Confecção'].isin(confeccoes_selecionadas)]
             
-            # Processamento numérico
-            cols_numericas = [col for col in ['Qtd', 'Qtd Ret', 'Saldo'] if col in df_filtered.columns]
-            for col in cols_numericas:
-                df_filtered[col] = pd.to_numeric(df_filtered[col], errors='coerce').fillna(0)
+            # Filtro 2: Contém no nome 'Confeccionado'
+            if 'Confeccionado' in df_filtered.columns:
+                termo_busca = st.sidebar.text_input("Contém no nome do produto:", value="")
+                if termo_busca:
+                    df_filtered['Confeccionado'] = df_filtered['Confeccionado'].fillna("").astype(str)
+                    df_filtered = df_filtered[df_filtered['Confeccionado'].str.contains(termo_busca, case=False, na=False)]
+            
+            # Filtro 3: Filtro Avançado por Cód Confec (upload de lista em Excel)
+            st.sidebar.markdown("---")
+            st.sidebar.markdown("### 🎯 Filtro Avançado por Código")
+            
+            if 'Cód Confec' in df_filtered.columns:
+                # Converter códigos para string padronizada
+                df_filtered['Cód Confec'] = df_filtered['Cód Confec'].fillna("").astype(str)
+                df_filtered['Cód Confec'] = df_filtered['Cód Confec'].str.replace(r'\.0$', '', regex=True).str.strip()
+                
+                # Lista de todos os códigos disponíveis
+                todos_cods = sorted([c for c in df_filtered['Cód Confec'].unique() if c and c != ''])
+                
+                # Upload de arquivo com lista de códigos
+                arquivo_cods = st.sidebar.file_uploader(
+                    "Upload Excel com lista de códigos", 
+                    type=["xlsx", "xls"], 
+                    key="upload_cods_confeccao",
+                    help="Arquivo deve conter uma coluna 'Cód Confec' ou usar a primeira coluna"
+                )
+                
+                codigos_do_arquivo = []
+                if arquivo_cods is not None:
+                    try:
+                        df_cods = pd.read_excel(arquivo_cods)
+                        df_cods.columns = df_cods.columns.str.strip()
+                        
+                        # Procurar coluna 'Cód Confec' ou usar primeira coluna
+                        if 'Cód Confec' in df_cods.columns:
+                            serie_cods = df_cods['Cód Confec']
+                        else:
+                            serie_cods = df_cods.iloc[:, 0]
+                        
+                        # Converter para string e limpar
+                        serie_cods = serie_cods.fillna("").astype(str)
+                        serie_cods = serie_cods.str.replace(r'\.0$', '', regex=True).str.strip()
+                        codigos_do_arquivo = [c for c in serie_cods.tolist() if c and c.lower() != 'nan']
+                        
+                        # Filtrar apenas códigos que existem no banco
+                        codigos_validos = [c for c in codigos_do_arquivo if c in todos_cods]
+                        
+                        if codigos_validos:
+                            st.sidebar.success(f"✅ {len(codigos_validos)} código(s) válido(s) encontrado(s)")
+                        else:
+                            st.sidebar.warning("⚠️ Nenhum código correspondente encontrado")
+                            
+                    except Exception as e:
+                        st.sidebar.error(f"Erro ao ler arquivo: {e}")
+                
+                # Multiselect para selecionar códigos
+                selecionados_cods = st.sidebar.multiselect(
+                    "Códigos do Produto:", 
+                    options=todos_cods, 
+                    default=codigos_do_arquivo if codigos_do_arquivo else []
+                )
+                
+                if selecionados_cods:
+                    df_filtered = df_filtered[df_filtered['Cód Confec'].isin(selecionados_cods)]
+                    st.sidebar.info(f"📊 {len(selecionados_cods)} código(s) selecionado(s)")
             
             # Métricas
             st.markdown("---")
             col1, col2, col3, col4 = st.columns(4)
+            
+            # Processamento numérico para métricas
+            cols_numericas = [col for col in ['Qtd', 'Qtd Ret', 'Saldo'] if col in df_filtered.columns]
+            for col in cols_numericas:
+                df_filtered[col] = pd.to_numeric(df_filtered[col], errors='coerce').fillna(0)
+            
             col1.metric("Total de Registros", len(df_filtered))
             if 'Qtd' in cols_numericas:
                 col2.metric("Soma de Qtd", f"{df_filtered['Qtd'].sum():.0f}")
@@ -837,27 +964,133 @@ def render_Confecção():
             if 'Saldo' in cols_numericas:
                 col4.metric("Soma de Saldo", f"{df_filtered['Saldo'].sum():.0f}")
             
-            # Exibição
-            st.dataframe(df_filtered, use_container_width=True, hide_index=True)
-            
-            # Exportação
             st.markdown("---")
-            buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-                df_filtered.to_excel(writer, sheet_name='Filtrado', index=False)
             
-            st.download_button(
-                label="⬇️ Baixar Excel",
-                data=buffer.getvalue(),
-                file_name="relatorio_Confecção.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+            # ==================== EXIBIÇÃO COM ABAS POR CONFECÇÃO ====================
+            if 'Confecção' in df_filtered.columns:
+                df_filtered['Confecção'] = df_filtered['Confecção'].astype(str)
+                confeccoes_unicas = [c for c in df_filtered['Confecção'].dropna().unique().tolist() if c and c != 'nan' and c != '']
+                confeccoes_unicas.sort()
+                
+                # Criar abas: Visão Geral + cada confecção
+                nomes_abas = ["📋 Visão Geral", "📊 Resumo Agrupado"] + [f"🏭 {conf[:30]}" for conf in confeccoes_unicas]
+                abas = st.tabs(nomes_abas)
+                
+                # ABA 0: Visão Geral - Tabela completa
+                with abas[0]:
+                    st.markdown("### 📋 Tabela Completa")
+                    st.markdown(f"Mostrando {len(df_filtered)} registros após aplicação dos filtros")
+                    
+                    # Preparar colunas para exibição
+                    display_cols = [col for col in ['Compra', 'Cód Confec', 'Confeccionado', 'Qtd', 'Qtd Ret', 'Saldo', 'Confecção'] if col in df_filtered.columns]
+                    if display_cols:
+                        st.dataframe(df_filtered[display_cols], use_container_width=True, hide_index=True)
+                
+                # ABA 1: Resumo Agrupado
+                with abas[1]:
+                    st.markdown("### 📊 Resumo por Confecção")
+                    
+                    if cols_numericas:
+                        # Agrupar por confecção
+                        df_agrupado = df_filtered.groupby('Confecção')[cols_numericas].sum().reset_index()
+                        
+                        # Ordenar por quantidade total
+                        if 'Qtd' in df_agrupado.columns:
+                            df_agrupado = df_agrupado.sort_values('Qtd', ascending=False)
+                        
+                        st.dataframe(df_agrupado, use_container_width=True, hide_index=True)
+                        
+                        # Gráfico de barras simples
+                        st.markdown("#### 📊 Distribuição por Confecção")
+                        if 'Qtd' in df_agrupado.columns:
+                            chart_data = df_agrupado.set_index('Confecção')[['Qtd']]
+                            st.bar_chart(chart_data)
+                    else:
+                        st.info("Não há colunas numéricas para realizar o agrupamento.")
+                
+                # ABAS para cada confecção
+                for i, conf in enumerate(confeccoes_unicas):
+                    with abas[i+2]:
+                        df_aba = df_filtered[df_filtered['Confecção'] == conf]
+                        
+                        # Métricas da confecção
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Total de Registros", len(df_aba))
+                        if 'Qtd' in df_aba.columns:
+                            with col2:
+                                st.metric("Soma de Qtd", f"{df_aba['Qtd'].sum():.0f}")
+                        if 'Saldo' in df_aba.columns:
+                            with col3:
+                                st.metric("Soma de Saldo", f"{df_aba['Saldo'].sum():.0f}")
+                        
+                        st.markdown("---")
+                        
+                        # Tabela da confecção
+                        display_cols = [col for col in ['Compra', 'Cód Confec', 'Confeccionado', 'Qtd', 'Qtd Ret', 'Saldo'] if col in df_aba.columns]
+                        if display_cols:
+                            st.dataframe(df_aba[display_cols], use_container_width=True, hide_index=True)
+            else:
+                # Se não tem coluna Confecção, mostra apenas a tabela
+                st.dataframe(df_filtered, use_container_width=True, hide_index=True)
+            
+            # ==================== EXPORTAÇÃO ====================
+            st.markdown("---")
+            st.subheader("📥 Exportar Relatórios")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Exportar dados filtrados
+                buffer = io.BytesIO()
+                with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                    df_filtered.to_excel(writer, sheet_name='Filtrado', index=False)
+                    
+                    # Adicionar aba de resumo
+                    if 'Confecção' in df_filtered.columns and cols_numericas:
+                        df_agrupado = df_filtered.groupby('Confecção')[cols_numericas].sum().reset_index()
+                        df_agrupado.to_excel(writer, sheet_name='Resumo_Confecções', index=False)
+                
+                st.download_button(
+                    label="⬇️ Baixar Excel",
+                    data=buffer.getvalue(),
+                    file_name=f"relatorio_confeccao_{datetime.now().strftime('%d_%m_%Y_%H%M')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
+            
+            with col2:
+                # Exportar CSV
+                csv = df_filtered.to_csv(index=False, encoding='utf-8-sig')
+                st.download_button(
+                    label="📥 Baixar CSV",
+                    data=csv,
+                    file_name=f"relatorio_confeccao_{datetime.now().strftime('%d_%m_%Y_%H%M')}.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
             
         except Exception as e:
-            st.error(f"Erro: {e}")
+            st.error(f"Erro ao processar o arquivo: {e}")
             st.exception(e)
     else:
         st.info("👆 Faça o upload de um arquivo Excel para começar.")
+        with st.expander("📝 Ver formato esperado"):
+            st.markdown("""
+                ### Colunas esperadas:
+                - **Compra** - Número da compra
+                - **Cód Confec** - Código do produto confeccionado
+                - **Confeccionado** - Nome do produto
+                - **Qtd** - Quantidade total
+                - **Qtd Ret** - Quantidade retornada
+                - **Saldo** - Saldo atual
+                - **Confecção** - Nome da confecção (para agrupamento)
+                
+                ### Regras aplicadas:
+                - 🚫 Linhas com **Qtd Ret ≥ 95% da Qtd** são automaticamente ocultadas
+                - 📁 Dados são agrupados em abas por confecção
+                - 🎯 Filtro avançado permite upload de lista de códigos em Excel
+            """)
 
 def render_agendamento():
     """Renderiza o módulo de agendamento de pedidos com abas organizadas"""
@@ -1079,8 +1312,10 @@ def render_dashboard():
             <div style="padding: 10px;">
                 <b>Funcionalidades:</b><br>
                 ✅ Upload de arquivos Excel<br>
-                ✅ Filtros avançados<br>
-                ✅ Agrupamento por confecção<br>
+                ✅ Filtro avançado por código<br>
+                ✅ Upload de lista em Excel<br>
+                ✅ Agrupamento em abas por confecção<br>
+                ✅ Ocultação automática (Qtd Ret > 95%)<br>
                 ✅ Exportação de relatórios
             </div>
         """, unsafe_allow_html=True)
@@ -1114,7 +1349,8 @@ def render_dashboard():
                 ✅ Filtro dinâmico por cliente<br>
                 ✅ Filtro dinâmico por data<br>
                 ✅ Organização por abas<br>
-                ✅ Interface responsiva
+                ✅ Interface responsiva<br>
+                ✅ Regras automáticas de negócio
             </div>
         """, unsafe_allow_html=True)
 
