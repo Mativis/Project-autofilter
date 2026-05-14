@@ -209,6 +209,23 @@ st.markdown("""
             color: white;
         }
         
+        /* Abas personalizadas */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 8px;
+            background-color: #f8f9fa;
+            padding: 5px;
+            border-radius: 10px;
+        }
+        .stTabs [data-baseweb="tab"] {
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-weight: 500;
+        }
+        .stTabs [aria-selected="true"] {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
         .stButton > button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -359,7 +376,7 @@ def show_detail_table(df_detalhes, title="📋 Detalhamento dos Pedidos", filter
     if 'Dt. Agendamento' in df_display.columns:
         df_display['Dt. Agendamento'] = pd.to_datetime(df_display['Dt. Agendamento'], errors='coerce')
     
-    # Exibir tabela com st.dataframe para melhor performance
+    # Exibir tabela
     st.dataframe(
         df_display,
         use_container_width=True,
@@ -388,7 +405,7 @@ def show_detail_table(df_detalhes, title="📋 Detalhamento dos Pedidos", filter
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ==================== FUNÇÃO DE CARDS COM TABELA INTEGRADA ====================
-def create_enhanced_client_cards(df_filtered, status_filter=None, show_details=True):
+def create_enhanced_client_cards(df_filtered, status_filter=None):
     """Cria cards de clientes com tabela de detalhes integrada"""
     
     if 'Cliente' not in df_filtered.columns:
@@ -449,8 +466,6 @@ def create_enhanced_client_cards(df_filtered, status_filter=None, show_details=T
     # Inicializar estados
     if 'expanded_clients' not in st.session_state:
         st.session_state.expanded_clients = {}
-    if 'selected_client_detail' not in st.session_state:
-        st.session_state.selected_client_detail = None
     
     # Renderizar cards
     for client_data in clientes_data:
@@ -484,18 +499,13 @@ def create_enhanced_client_cards(df_filtered, status_filter=None, show_details=T
                     </div>
                 </div>
         """, unsafe_allow_html=True)
-                
-        # Botões
-        col1, col2, col3 = st.columns([1, 1, 4])
+        
+        # Botão expandir
+        col1, col2 = st.columns([1, 5])
         with col1:
             button_label = "🔽 Ver Pedidos" if not is_client_expanded else "🔼 Fechar"
             if st.button(button_label, key=f"btn_{client_key}", use_container_width=True):
                 st.session_state.expanded_clients[client_key] = not is_client_expanded
-                st.rerun()
-        
-        with col2:
-            if st.button(f"📋 Ver Tabela", key=f"table_{client_key}", use_container_width=True):
-                st.session_state.selected_client_detail = client
                 st.rerun()
         
         # Conteúdo expandido (cards)
@@ -550,15 +560,10 @@ def create_enhanced_client_cards(df_filtered, status_filter=None, show_details=T
                         
                         st.markdown(f"""
                             <div class="order-card {status_class}">
-                                <div class="order-header" style="margin-bottom: 10px;">
-                                    <div>
-                                        <div style="font-weight: bold;">Pedido #{pedido_id}</div>
-                                        <div style="font-size: 12px; color: #666;">{safe_str(produto)[:60]}</div>
-                                        <div style="font-size: 11px; color: #999;">📅 {data_str}</div>
-                                    </div>
-                                    <div>
-                                        <span class="status-badge {status_class}">{status_text}</span>
-                                    </div>
+                                <div style="margin-bottom: 10px;">
+                                    <div style="font-weight: bold;">Pedido #{pedido_id}</div>
+                                    <div style="font-size: 12px; color: #666;">{safe_str(produto)[:60]}</div>
+                                    <div style="font-size: 11px; color: #999;">📅 {data_str}</div>
                                 </div>
                                 <div style="display: flex; gap: 15px; font-size: 12px; margin: 10px 0; flex-wrap: wrap;">
                                     <span>📊 Qtd: {qtd:,.0f}</span>
@@ -571,32 +576,18 @@ def create_enhanced_client_cards(df_filtered, status_filter=None, show_details=T
                                         <div class="progress-fill" style="width: {percent_estoque}%; background: {estoque_color};"></div>
                                     </div>
                                 </div>
+                                <div style="margin-top: 8px;">
+                                    <span class="status-badge {status_class}">{status_text}</span>
+                                </div>
                             </div>
                         """, unsafe_allow_html=True)
             
             st.markdown('</div>', unsafe_allow_html=True)
         
         st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Tabela de detalhes do cliente selecionado
-    if show_details and st.session_state.selected_client_detail:
-        client_selected = st.session_state.selected_client_detail
-        df_client_selected = next((c['df_client'] for c in clientes_data if c['client'] == client_selected), None)
-        
-        if df_client_selected is not None and not df_client_selected.empty:
-            st.markdown("---")
-            show_detail_table(
-                df_client_selected, 
-                title=f"📋 Detalhamento - Cliente: {client_selected}",
-                filter_info=f"Mostrando {len(df_client_selected)} pedido(s) do cliente {client_selected}"
-            )
-            
-            if st.button("🔒 Fechar Tabela", key="close_client_table"):
-                st.session_state.selected_client_detail = None
-                st.rerun()
 
 # ==================== FUNÇÃO DE CALENDÁRIO COM TABELA INTEGRADA ====================
-def create_calendar_view(df_filtered, show_details=True):
+def create_calendar_view(df_filtered):
     """Cria visualização de calendário com tabela de detalhes integrada"""
     
     if 'Dt. Agendamento' not in df_filtered.columns:
@@ -611,10 +602,6 @@ def create_calendar_view(df_filtered, show_details=True):
     
     # Converter para data
     df_filtered_clean['Data'] = pd.to_datetime(df_filtered_clean['Dt. Agendamento']).dt.date
-    
-    # Inicializar estado
-    if 'selected_calendar_date' not in st.session_state:
-        st.session_state.selected_calendar_date = None
     
     # Agrupar por data
     agendamentos = defaultdict(list)
@@ -671,25 +658,15 @@ def create_calendar_view(df_filtered, show_details=True):
                         has_atencao = any(p['status_class'] == 'atencao' for p in pedidos_dia)
                         
                         if has_prioridade:
-                            bg_color = "#f8d7da"
                             border_color = "#f44336"
                         elif has_atencao:
-                            bg_color = "#fff3cd"
                             border_color = "#ff9800"
                         else:
-                            bg_color = "#d4edda"
                             border_color = "#4caf50"
                         
                         with col:
-                            # Botão para ver detalhes da data
-                            btn_key = f"date_btn_{data_dia}"
-                            if st.button(f"📌 {dia}\n({len(pedidos_dia)})", key=btn_key, use_container_width=True):
-                                st.session_state.selected_calendar_date = data_dia
-                                st.rerun()
-                            
-                            # Expander com resumo
-                            with st.expander(f"Ver {len(pedidos_dia)} pedido(s)", expanded=False):
-                                for pedido in pedidos_dia[:5]:  # Mostrar até 5
+                            with st.expander(f"📌 {dia}\n({len(pedidos_dia)})", expanded=False):
+                                for pedido in pedidos_dia:
                                     st.markdown(f"""
                                         <div style="margin-bottom: 8px; padding: 6px; border-left: 3px solid {border_color}; background-color: #f5f5f5; font-size: 12px;">
                                             <b>Pedido #{pedido['pedido']}</b><br>
@@ -697,27 +674,8 @@ def create_calendar_view(df_filtered, show_details=True):
                                             <span class="status-badge {pedido['status_class']}" style="font-size: 10px;">{pedido['status']}</span>
                                         </div>
                                     """, unsafe_allow_html=True)
-                                if len(pedidos_dia) > 5:
-                                    st.caption(f"... e mais {len(pedidos_dia) - 5} pedido(s)")
                     else:
                         col.markdown(f"<div style='text-align: center; padding: 10px; color: #ccc;'>{dia}</div>", unsafe_allow_html=True)
-    
-    # Tabela de detalhes da data selecionada
-    if show_details and st.session_state.selected_calendar_date:
-        data_selecionada = st.session_state.selected_calendar_date
-        df_data = df_filtered_clean[df_filtered_clean['Data'] == data_selecionada].copy()
-        
-        if not df_data.empty:
-            st.markdown("---")
-            show_detail_table(
-                df_data,
-                title=f"📋 Detalhamento - Data: {data_selecionada.strftime('%d/%m/%Y')}",
-                filter_info=f"Mostrando {len(df_data)} pedido(s) agendados para {data_selecionada.strftime('%d/%m/%Y')}"
-            )
-            
-            if st.button("🔒 Fechar Tabela", key="close_calendar_table"):
-                st.session_state.selected_calendar_date = None
-                st.rerun()
 
 # ==================== FUNÇÃO PRINCIPAL ====================
 def main():
@@ -744,15 +702,15 @@ def main():
         
         with st.expander("ℹ️ Sobre o Sistema"):
             st.markdown("""
-                **Versão:** 4.1  
+                **Versão:** 4.2  
                 **Desenvolvido para:** Gestão de Confecção  
                 
                 ### Funcionalidades:
                 - ✅ Cards com status do cliente
+                - ✅ Visualização em abas organizadas
+                - ✅ Calendário interativo
                 - ✅ Tabela detalhada integrada
-                - ✅ Filtro por cliente/data
-                - ✅ Visualização de estoque
-                - ✅ Exportação de dados
+                - ✅ Filtros dinâmicos
             """)
         
         st.markdown("---")
@@ -842,7 +800,7 @@ def render_Confecção():
         st.info("👆 Faça o upload de um arquivo Excel para começar.")
 
 def render_agendamento():
-    """Renderiza o módulo de agendamento de pedidos"""
+    """Renderiza o módulo de agendamento de pedidos com abas organizadas"""
     st.markdown("## 📅 Agendamento de Pedidos")
     
     uploaded_file = st.file_uploader("Carregue o arquivo Excel", type=['xlsx', 'xls'], key="agendamento_file")
@@ -899,12 +857,6 @@ def render_agendamento():
                 index=0
             )
             
-            # Opção de visualização
-            st.sidebar.markdown("---")
-            st.sidebar.markdown("### 📊 Visualização")
-            show_client_cards = st.sidebar.checkbox("Mostrar Cards por Cliente", value=True)
-            show_calendar = st.sidebar.checkbox("Mostrar Calendário", value=True)
-            
             # Métricas
             st.markdown("---")
             col1, col2, col3, col4 = st.columns(4)
@@ -923,31 +875,94 @@ def render_agendamento():
             
             st.markdown("---")
             
-            # Visualizações
+            # ==================== ABAS ORGANIZADAS ====================
             if not df_filtered.empty:
                 status_map = {"Todos": None, "PRIORIDADE": "PRIORIDADE", "ATENÇÃO": "ATENÇÃO", "OK": "OK"}
                 
-                if show_client_cards:
-                    create_enhanced_client_cards(df_filtered, status_map[client_status_filter], show_details=True)
+                # Criar abas principais
+                tab1, tab2, tab3 = st.tabs([
+                    "🎯 Cards por Cliente", 
+                    "📅 Visualização em Calendário", 
+                    "📋 Tabela Geral Completa"
+                ])
                 
-                if show_calendar:
-                    if show_client_cards:
-                        st.markdown("---")
-                    create_calendar_view(df_filtered, show_details=True)
+                # ABA 1: Cards por Cliente
+                with tab1:
+                    st.markdown("### 🎯 Visualização por Cliente")
+                    st.markdown("Cards organizados por cliente com status e detalhamento")
+                    create_enhanced_client_cards(df_filtered, status_map[client_status_filter])
                 
-                # Tabela geral (opcional)
-                st.markdown("---")
-                with st.expander("📋 Ver Tabela Geral Completa"):
-                    show_detail_table(df_filtered, title="📋 Todos os Pedidos")
+                # ABA 2: Calendário
+                with tab2:
+                    st.markdown("### 📅 Visualização em Calendário")
+                    st.markdown("Pedidos organizados por data de agendamento")
+                    create_calendar_view(df_filtered)
+                
+                # ABA 3: Tabela Geral
+                with tab3:
+                    st.markdown("### 📋 Tabela Geral Completa")
+                    st.markdown("Visualização tabular de todos os pedidos com filtros aplicados")
                     
-                    # Download da tabela
-                    csv = df_filtered.to_csv(index=False, encoding='utf-8-sig')
-                    st.download_button(
-                        "📥 Baixar CSV Completo", 
-                        data=csv, 
-                        file_name=f"todos_pedidos_{datetime.now().strftime('%d_%m_%Y')}.csv", 
-                        mime="text/csv"
-                    )
+                    # Sub-abas para diferentes visualizações da tabela
+                    sub_tab1, sub_tab2 = st.tabs(["📊 Visualização Completa", "📥 Exportar Dados"])
+                    
+                    with sub_tab1:
+                        show_detail_table(df_filtered, title="📋 Todos os Pedidos", filter_info=f"Total de {len(df_filtered)} pedidos encontrados")
+                    
+                    with sub_tab2:
+                        st.markdown("#### Opções de Exportação")
+                        
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            # Exportar CSV
+                            csv = df_filtered.to_csv(index=False, encoding='utf-8-sig')
+                            st.download_button(
+                                "📥 Baixar CSV", 
+                                data=csv, 
+                                file_name=f"pedidos_{datetime.now().strftime('%d_%m_%Y_%H%M')}.csv", 
+                                mime="text/csv",
+                                use_container_width=True
+                            )
+                        
+                        with col2:
+                            # Exportar Excel
+                            buffer = io.BytesIO()
+                            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                                df_filtered.to_excel(writer, sheet_name='Pedidos', index=False)
+                                
+                                # Adicionar aba de resumo se tiver status
+                                if 'Status' in df_filtered.columns:
+                                    resumo = df_filtered.groupby('Status').size().reset_index(name='Quantidade')
+                                    resumo.to_excel(writer, sheet_name='Resumo_Status', index=False)
+                                
+                                # Adicionar aba de clientes se tiver cliente
+                                if 'Cliente' in df_filtered.columns:
+                                    clientes_resumo = df_filtered.groupby('Cliente').size().reset_index(name='Total_Pedidos')
+                                    clientes_resumo = clientes_resumo.sort_values('Total_Pedidos', ascending=False)
+                                    clientes_resumo.to_excel(writer, sheet_name='Resumo_Clientes', index=False)
+                            
+                            st.download_button(
+                                "📥 Baixar Excel", 
+                                data=buffer.getvalue(), 
+                                file_name=f"pedidos_{datetime.now().strftime('%d_%m_%Y_%H%M')}.xlsx", 
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                use_container_width=True
+                            )
+                        
+                        st.markdown("---")
+                        st.markdown("#### 📊 Estatísticas Rápidas")
+                        
+                        # Estatísticas adicionais
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Total de Pedidos", len(df_filtered))
+                        with col2:
+                            if 'Cliente' in df_filtered.columns:
+                                st.metric("Total de Clientes", df_filtered['Cliente'].nunique())
+                        with col3:
+                            if 'Qtd' in df_filtered.columns:
+                                st.metric("Quantidade Total", f"{df_filtered['Qtd'].sum():,.0f}")
             else:
                 st.warning("Nenhum pedido encontrado com os filtros selecionados.")
             
@@ -967,10 +982,23 @@ def render_agendamento():
                 - **Saldo Calc.** - Estoque calculado
                 - **Dt. Agendamento** - Data (opcional)
                 
-                ### Funcionalidades:
-                - Clique em "Ver Tabela" nos cards para ver detalhes do cliente
-                - Clique nas datas do calendário para ver detalhes da data
-                - Use os filtros para refinar a visualização
+                ### Funcionalidades por Aba:
+                
+                **🎯 Cards por Cliente**
+                - Visualização por cliente com status
+                - Cards expansíveis com detalhes
+                - Barra de progresso por cliente
+                
+                **📅 Visualização em Calendário**
+                - Calendário interativo
+                - Pedidos agrupados por data
+                - Cores indicativas por prioridade
+                
+                **📋 Tabela Geral Completa**
+                - Tabela completa com todos os dados
+                - Exportação para CSV e Excel
+                - Estatísticas rápidas
+                - Resumos automáticos
             """)
 
 def render_dashboard():
@@ -1007,9 +1035,8 @@ def render_dashboard():
                 <b>Funcionalidades:</b><br>
                 ✅ Cards por cliente com status<br>
                 ✅ Calendário interativo<br>
-                ✅ Tabela detalhada integrada<br>
-                ✅ Filtro por cliente/data<br>
-                ✅ Visualização de estoque
+                ✅ 3 abas organizadas<br>
+                ✅ Exportação CSV/Excel
             </div>
         """, unsafe_allow_html=True)
     
@@ -1022,10 +1049,10 @@ def render_dashboard():
             <br>
             <div style="padding: 10px;">
                 <b>Destaques:</b><br>
-                ✅ Tabela integrada aos cards<br>
-                ✅ Filtro dinâmico por cliente<br>
-                ✅ Filtro dinâmico por data<br>
-                ✅ Interface responsiva
+                ✅ Organização por abas<br>
+                ✅ Visualização flexível<br>
+                ✅ Interface responsiva<br>
+                ✅ Performance otimizada
             </div>
         """, unsafe_allow_html=True)
 
