@@ -9,7 +9,7 @@ from collections import defaultdict
 # Configuração da página (DEVE ser o primeiro comando Streamlit)
 st.set_page_config(
     page_title="Ferramentas de Gestão de Confecção",
-    page_icon="🛠️",
+    page_icon="🛠️ ",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -149,7 +149,7 @@ def show_header():
     """Exibe cabeçalho da aplicação"""
     st.markdown("""
         <div class="main-header">
-            <h1>🏭 Sistema de Gestão de Confecção</h1>
+            <h1>🛠️ Ferramentas de Gestão de Confecção</h1>
             <p>Gerencie seus pedidos, agendamentos e estoque de forma inteligente</p>
         </div>
     """, unsafe_allow_html=True)
