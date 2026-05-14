@@ -308,7 +308,7 @@ def get_client_status(pedidos_df):
 def filter_by_qtd_ret_percent(df, qtd_col='Qtd', qtd_ret_col='Qtd Ret', threshold=95):
     """Filtra linhas onde Qtd Ret é menor que threshold% da Qtd"""
     if qtd_col not in df.columns or qtd_ret_col not in df.columns:
-        return df
+        return df, 0
     
     df_filtered = df.copy()
     
@@ -330,6 +330,14 @@ def filter_by_qtd_ret_percent(df, qtd_col='Qtd', qtd_ret_col='Qtd Ret', threshol
     df_filtered = df_filtered.drop(columns=['percentual_ret'])
     
     return df_filtered, linhas_removidas
+
+def validate_default_options(options, defaults):
+    """Valida se os valores padrão existem nas opções"""
+    if not defaults:
+        return []
+    if not options:
+        return []
+    return [d for d in defaults if d in options]
 
 # ==================== FUNÇÃO DE TABELA DE DETALHES ====================
 def show_detail_table(df_detalhes, title="📋 Detalhamento dos Pedidos", filter_info=None):
@@ -801,7 +809,7 @@ def main():
         
         with st.expander("ℹ️ Sobre o Sistema"):
             st.markdown("""
-                **Versão:** 5.0  
+                **Versão:** 5.1  
                 **Desenvolvido para:** Gestão de Confecção  
                 
                 ### Funcionalidades:
@@ -930,17 +938,23 @@ def render_confeccao():
                         
                         if codigos_validos:
                             st.sidebar.success(f"✅ {len(codigos_validos)} código(s) válido(s) encontrado(s)")
+                            codigos_do_arquivo = codigos_validos
                         else:
                             st.sidebar.warning("⚠️ Nenhum código correspondente encontrado")
+                            codigos_do_arquivo = []
                             
                     except Exception as e:
                         st.sidebar.error(f"Erro ao ler arquivo: {e}")
+                        codigos_do_arquivo = []
+                
+                # Validar valores padrão antes de passar para o multiselect
+                default_cods = validate_default_options(todos_cods, codigos_do_arquivo)
                 
                 # Multiselect para selecionar códigos
                 selecionados_cods = st.sidebar.multiselect(
                     "Códigos do Produto:", 
                     options=todos_cods, 
-                    default=codigos_do_arquivo if codigos_do_arquivo else []
+                    default=default_cods
                 )
                 
                 if selecionados_cods:
