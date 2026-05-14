@@ -8,8 +8,8 @@ from collections import defaultdict
 
 # Configuração da página (DEVE ser o primeiro comando Streamlit)
 st.set_page_config(
-    page_title="Ferramentas de Gestão de Confecção",
-    page_icon="🛠️",
+    page_title="Sistema de Gestão de Confecção",
+    page_icon="🏭",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -258,6 +258,21 @@ st.markdown("""
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
+        
+        /* Loading spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -271,10 +286,24 @@ def show_header():
     """Exibe cabeçalho da aplicação"""
     st.markdown("""
         <div class="main-header">
-            <h1>🛠️ Ferramentas de Gestão de Confecção</h1>
+            <h1>🏭 Sistema de Gestão de Confecção</h1>
             <p>Gerencie seus pedidos, agendamentos e estoque de forma inteligente</p>
         </div>
     """, unsafe_allow_html=True)
+
+def safe_str(value):
+    """Converte qualquer valor para string de forma segura"""
+    if pd.isna(value):
+        return ""
+    if isinstance(value, (np.int64, np.int32, np.float64, np.float32)):
+        return str(int(value)) if value == int(value) else str(value)
+    return str(value)
+
+def safe_hash(*args):
+    """Gera hash seguro a partir de múltiplos argumentos"""
+    str_args = [safe_str(arg) for arg in args]
+    combined = "_".join(str_args)
+    return combined.replace(" ", "_").replace("/", "_").replace("\\", "_").replace("|", "_")
 
 # ==================== FUNÇÕES ORIGINAIS (PRESERVADAS) ====================
 def get_status(qtd, saldo_atual, saldo_calculado):
@@ -428,13 +457,17 @@ def create_enhanced_client_cards(df_filtered):
         # AGREGAR PEDIDOS POR NÚMERO DE PEDIDO
         # Agrupar linhas do mesmo pedido
         if 'Pedido' in df_client.columns:
-            pedidos_agrupados = df_client.groupby('Pedido').agg({
-                'Produto': lambda x: ' / '.join(x.unique()[:3]),  # Mostrar até 3 produtos
+            # Converter Pedido para string para garantir agrupamento correto
+            df_client['Pedido_str'] = df_client['Pedido'].apply(safe_str)
+            
+            # Agrupar por pedido
+            pedidos_agrupados = df_client.groupby('Pedido_str').agg({
+                'Produto': lambda x: ' / '.join(x.unique()[:3]) if len(x.unique()) > 0 else 'N/A',
                 'Qtd': 'first',
                 'Saldo Atual': 'first',
                 'Saldo Calc.': 'first',
                 'R$ Total Calc.': 'first',
-                'Cód Prod': lambda x: ' / '.join(x.unique()[:3]),
+                'Cód Prod': lambda x: ' / '.join(x.unique()[:3]) if len(x.unique()) > 0 else 'N/A',
                 'Operação Produtiva': 'first',
                 'Segmento': 'first',
                 'Coleção': 'first',
@@ -443,16 +476,21 @@ def create_enhanced_client_cards(df_filtered):
             }).reset_index()
             
             # Adicionar contagem de itens por pedido
-            itens_por_pedido = df_client.groupby('Pedido').size()
-            pedidos_agrupados['Qtd_Itens'] = pedidos_agrupados['Pedido'].map(itens_por_pedido)
+            itens_por_pedido = df_client.groupby('Pedido_str').size()
+            pedidos_agrupados['Qtd_Itens'] = pedidos_agrupados['Pedido_str'].map(itens_por_pedido)
+            
+            # Renomear coluna
+            pedidos_agrupados.rename(columns={'Pedido_str': 'Pedido'}, inplace=True)
         else:
             pedidos_agrupados = df_client
+            pedidos_agrupados['Pedido'] = 'N/A'
+            pedidos_agrupados['Qtd_Itens'] = 1
         
         # Calcular estatísticas do cliente
         total_pedidos = len(pedidos_agrupados)
-        total_prioridade = len(pedidos_agrupados[pedidos_agrupados['Status'] == 'PRIORIDADE'])
-        total_atencao = len(pedidos_agrupados[pedidos_agrupados['Status'] == 'ATENÇÃO'])
-        total_ok = len(pedidos_agrupados[pedidos_agrupados['Status'] == 'OK'])
+        total_prioridade = len(pedidos_agrupados[pedidos_agrupados['Status'] == 'PRIORIDADE']) if 'Status' in pedidos_agrupados.columns else 0
+        total_atencao = len(pedidos_agrupados[pedidos_agrupados['Status'] == 'ATENÇÃO']) if 'Status' in pedidos_agrupados.columns else 0
+        total_ok = len(pedidos_agrupados[pedidos_agrupados['Status'] == 'OK']) if 'Status' in pedidos_agrupados.columns else 0
         
         # Determinar cor do card baseado nos status
         if total_prioridade > 0:
@@ -462,8 +500,8 @@ def create_enhanced_client_cards(df_filtered):
         else:
             status_text = f"🟢 {total_ok} OK"
         
-        # Estado atual do card do cliente
-        client_key = f"client_{client.replace(' ', '_').replace('|', '_')}"
+        # Estado atual do card do cliente (usando safe_hash)
+        client_key = safe_hash("client", client)
         is_client_expanded = st.session_state.expanded_clients.get(client_key, False)
         
         # Card principal do cliente
@@ -480,11 +518,11 @@ def create_enhanced_client_cards(df_filtered):
             
             with col2:
                 st.markdown(f"""
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <span class="stat-badge" style="background: #f0f0f0; padding: 5px 10px; border-radius: 8px;">
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <span style="background: #f0f0f0; padding: 5px 10px; border-radius: 8px;">
                             📦 {total_pedidos} pedido(s)
                         </span>
-                        <span class="stat-badge" style="background: #f0f0f0; padding: 5px 10px; border-radius: 8px;">
+                        <span style="background: #f0f0f0; padding: 5px 10px; border-radius: 8px;">
                             {status_text}
                         </span>
                     </div>
@@ -501,120 +539,143 @@ def create_enhanced_client_cards(df_filtered):
             
             # Conteúdo do cliente (expansível)
             if is_client_expanded:
-                # Mostrar pedidos em grid
-                cols = st.columns(2)
-                
-                for idx, (_, row) in enumerate(pedidos_agrupados.iterrows()):
-                    col_idx = idx % 2
+                if len(pedidos_agrupados) == 0:
+                    st.info("Nenhum pedido encontrado para este cliente.")
+                else:
+                    # Mostrar pedidos em grid
+                    cols = st.columns(2)
                     
-                    with cols[col_idx]:
-                        # Obter dados do pedido
-                        pedido_id = row.get('Pedido', 'N/A')
-                        produto = row.get('Produto', 'N/A')
-                        qtd = row.get('Qtd', 0)
-                        saldo_atual = row.get('Saldo Atual', 0)
-                        saldo_calc = row.get('Saldo Calc.', 0)
-                        qtd_itens = row.get('Qtd_Itens', 1)
-                        status_text_pedido, status_class = get_status(qtd, saldo_atual, saldo_calc)
+                    for idx, (_, row) in enumerate(pedidos_agrupados.iterrows()):
+                        col_idx = idx % 2
                         
-                        # Formatar data
-                        data_str = "N/A"
-                        if 'Dt. Agendamento' in row and pd.notna(row['Dt. Agendamento']):
+                        with cols[col_idx]:
+                            # Obter dados do pedido
+                            pedido_id = safe_str(row.get('Pedido', 'N/A'))
+                            produto = row.get('Produto', 'N/A')
+                            qtd = row.get('Qtd', 0)
+                            saldo_atual = row.get('Saldo Atual', 0)
+                            saldo_calc = row.get('Saldo Calc.', 0)
+                            qtd_itens = row.get('Qtd_Itens', 1)
+                            
+                            # Converter para números
                             try:
-                                data_str = row['Dt. Agendamento'].strftime('%d/%m/%Y')
+                                qtd = float(qtd) if pd.notna(qtd) else 0
+                                saldo_atual = float(saldo_atual) if pd.notna(saldo_atual) else 0
+                                saldo_calc = float(saldo_calc) if pd.notna(saldo_calc) else 0
                             except:
-                                data_str = str(row['Dt. Agendamento'])
-                        
-                        # Formatar valor
-                        valor_str = "N/A"
-                        if 'R$ Total Calc.' in row and pd.notna(row['R$ Total Calc.']):
-                            try:
-                                valor_str = f"R$ {float(row['R$ Total Calc.']):,.2f}"
-                            except:
-                                valor_str = str(row['R$ Total Calc.'])
-                        
-                        # Chave única para este pedido (usando hash para garantir unicidade)
-                        order_key = f"order_{hash(f"{client}_{pedido_id}")}"
-                        is_order_expanded = st.session_state.expanded_orders.get(order_key, False)
-                        
-                        # Card do pedido com status visual
-                        status_class_lower = status_class.lower()
-                        
-                        # Header do pedido
-                        st.markdown(f"""
-                            <div class="order-card {status_class_lower}">
-                                <div class="order-header">
-                                    <div>
-                                        <span class="order-number">Pedido #{pedido_id}</span>
-                                        <div style="font-size: 12px; color: #666; margin-top: 4px;">
-                                            {produto}
-                                        </div>
-                                        <div style="font-size: 11px; color: #999; margin-top: 2px;">
-                                            📦 {qtd_itens} item(ns) no pedido
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <span class="order-status status-{status_class_lower}">{status_text_pedido}</span>
-                                    </div>
-                                </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Botão de detalhes (apenas um por pedido)
-                        btn_key = f"detail_{order_key}"
-                        if st.button(f"📋 Ver Detalhes Completos", key=btn_key, use_container_width=True):
-                            st.session_state.expanded_orders[order_key] = not is_order_expanded
-                            st.rerun()
-                        
-                        # Detalhes expandidos do pedido
-                        if is_order_expanded:
+                                qtd = 0
+                                saldo_atual = 0
+                                saldo_calc = 0
+                            
+                            status_text_pedido, status_class = get_status(qtd, saldo_atual, saldo_calc)
+                            
+                            # Formatar data
+                            data_str = "N/A"
+                            if 'Dt. Agendamento' in row and pd.notna(row['Dt. Agendamento']):
+                                try:
+                                    if hasattr(row['Dt. Agendamento'], 'strftime'):
+                                        data_str = row['Dt. Agendamento'].strftime('%d/%m/%Y')
+                                    else:
+                                        data_str = str(row['Dt. Agendamento'])
+                                except:
+                                    data_str = str(row['Dt. Agendamento'])
+                            
+                            # Formatar valor
+                            valor_str = "N/A"
+                            if 'R$ Total Calc.' in row and pd.notna(row['R$ Total Calc.']):
+                                try:
+                                    valor = float(row['R$ Total Calc.'])
+                                    valor_str = f"R$ {valor:,.2f}"
+                                except:
+                                    valor_str = str(row['R$ Total Calc.'])
+                            
+                            # Chave única para este pedido (usando safe_hash)
+                            order_key = safe_hash("order", client, pedido_id)
+                            is_order_expanded = st.session_state.expanded_orders.get(order_key, False)
+                            
+                            # Card do pedido com status visual
+                            status_class_lower = status_class.lower()
+                            
+                            # Header do pedido
                             st.markdown(f"""
-                                <div class="order-details expanded">
-                                    <div class="detail-grid">
-                                        <div class="detail-item">
-                                            <div class="detail-label">📦 Produto(s)</div>
-                                            <div class="detail-value">{row.get('Produto', 'N/A')}</div>
+                                <div class="order-card {status_class_lower}">
+                                    <div class="order-header">
+                                        <div>
+                                            <span class="order-number">Pedido #{pedido_id}</span>
+                                            <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                                                {produto[:100]}{'...' if len(str(produto)) > 100 else ''}
+                                            </div>
+                                            <div style="font-size: 11px; color: #999; margin-top: 2px;">
+                                                📦 {qtd_itens} item(ns) no pedido
+                                            </div>
                                         </div>
-                                        <div class="detail-item">
-                                            <div class="detail-label">🔢 Código(s)</div>
-                                            <div class="detail-value">{row.get('Cód Prod', 'N/A')}</div>
-                                        </div>
-                                        <div class="detail-item">
-                                            <div class="detail-label">📅 Data Agendamento</div>
-                                            <div class="detail-value">{data_str}</div>
-                                        </div>
-                                        <div class="detail-item">
-                                            <div class="detail-label">🏭 Operação</div>
-                                            <div class="detail-value">{row.get('Operação Produtiva', 'N/A')}</div>
-                                        </div>
-                                        <div class="detail-item">
-                                            <div class="detail-label">📊 Segmento</div>
-                                            <div class="detail-value">{row.get('Segmento', 'N/A')}</div>
-                                        </div>
-                                        <div class="detail-item">
-                                            <div class="detail-label">🎨 Coleção</div>
-                                            <div class="detail-value">{row.get('Coleção', 'N/A')}</div>
-                                        </div>
-                                        <div class="detail-item">
-                                            <div class="detail-label">📊 Quantidade Pedida</div>
-                                            <div class="detail-value">{qtd:,.0f}</div>
-                                        </div>
-                                        <div class="detail-item">
-                                            <div class="detail-label">📦 Saldo Atual</div>
-                                            <div class="detail-value">{saldo_atual:,.0f}</div>
-                                        </div>
-                                        <div class="detail-item">
-                                            <div class="detail-label">📈 Saldo Calculado</div>
-                                            <div class="detail-value">{saldo_calc:,.0f}</div>
-                                        </div>
-                                        <div class="detail-item">
-                                            <div class="detail-label">💰 Valor Total</div>
-                                            <div class="detail-value">{valor_str}</div>
+                                        <div>
+                                            <span class="order-status status-{status_class_lower}">{status_text_pedido}</span>
                                         </div>
                                     </div>
-                                </div>
                             """, unsafe_allow_html=True)
-                        
-                        st.markdown("</div>", unsafe_allow_html=True)
+                            
+                            # Botão de detalhes (apenas um por pedido)
+                            btn_key = safe_hash("detail", order_key)
+                            if st.button(f"📋 Ver Detalhes Completos", key=btn_key, use_container_width=True):
+                                st.session_state.expanded_orders[order_key] = not is_order_expanded
+                                st.rerun()
+                            
+                            # Detalhes expandidos do pedido
+                            if is_order_expanded:
+                                # Obter código do produto
+                                cod_prod = row.get('Cód Prod', 'N/A')
+                                if pd.isna(cod_prod):
+                                    cod_prod = 'N/A'
+                                
+                                st.markdown(f"""
+                                    <div class="order-details expanded">
+                                        <div class="detail-grid">
+                                            <div class="detail-item">
+                                                <div class="detail-label">📦 Produto(s)</div>
+                                                <div class="detail-value">{produto}</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">🔢 Código(s)</div>
+                                                <div class="detail-value">{cod_prod}</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">📅 Data Agendamento</div>
+                                                <div class="detail-value">{data_str}</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">🏭 Operação</div>
+                                                <div class="detail-value">{row.get('Operação Produtiva', 'N/A')}</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">📊 Segmento</div>
+                                                <div class="detail-value">{row.get('Segmento', 'N/A')}</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">🎨 Coleção</div>
+                                                <div class="detail-value">{row.get('Coleção', 'N/A')}</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">📊 Quantidade Pedida</div>
+                                                <div class="detail-value">{qtd:,.0f}</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">📦 Saldo Atual</div>
+                                                <div class="detail-value">{saldo_atual:,.0f}</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">📈 Saldo Calculado</div>
+                                                <div class="detail-value">{saldo_calc:,.0f}</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">💰 Valor Total</div>
+                                                <div class="detail-value">{valor_str}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                            
+                            st.markdown("</div>", unsafe_allow_html=True)
                 
                 # Rodapé do cliente com resumo
                 st.markdown(f"""
@@ -636,16 +697,17 @@ def create_enhanced_client_cards(df_filtered):
                 st.markdown("<br>", unsafe_allow_html=True)
             else:
                 # Resumo compacto quando colapsado
-                st.markdown(f"""
-                    <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
-                        <div style="display: flex; gap: 20px; font-size: 14px; flex-wrap: wrap;">
-                            <span>📦 Total: {total_pedidos} pedido(s)</span>
-                            <span>🔴 Prioridade: {total_prioridade}</span>
-                            <span>🟠 Atenção: {total_atencao}</span>
-                            <span>🟢 OK: {total_ok}</span>
+                if total_pedidos > 0:
+                    st.markdown(f"""
+                        <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
+                            <div style="display: flex; gap: 20px; font-size: 14px; flex-wrap: wrap;">
+                                <span>📦 Total: {total_pedidos} pedido(s)</span>
+                                <span>🔴 Prioridade: {total_prioridade}</span>
+                                <span>🟠 Atenção: {total_atencao}</span>
+                                <span>🟢 OK: {total_ok}</span>
+                            </div>
                         </div>
-                    </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
 
 # ==================== FUNÇÃO PRINCIPAL ====================
 def main():
@@ -676,7 +738,7 @@ def main():
         # Informações do sistema
         with st.expander("ℹ️ Sobre o Sistema"):
             st.markdown("""
-                **Versão:** 3.1  
+                **Versão:** 3.2  
                 **Desenvolvido para:** Gestão de Confecção  
                 
                 ### Funcionalidades:
@@ -686,6 +748,7 @@ def main():
                 - ✅ Detalhamento expansível
                 - ✅ Priorização automática
                 - ✅ Agrupamento inteligente de pedidos
+                - ✅ Tratamento seguro de tipos de dados
             """)
         
         st.markdown("---")
@@ -697,15 +760,8 @@ def main():
             st.markdown("🟢 **Online**")
         with col2:
             st.markdown(f"📅 {datetime.now().strftime('%d/%m/%Y')}")
-    
-    # Conteúdo principal baseado no módulo selecionado
-    if modulo == "📋 Filtro de Confecção":
-        render_Confecção_tab()
-    elif modulo == "📅 Agendamento de Pedidos":
-        render_agendamento_tab()
-    else:
-        render_dashboard()
 
+# ==================== FUNÇÕES DAS ABAS ====================
 def render_Confecção_tab():
     """Renderiza a aba de filtro de confecção"""
     st.markdown("## 📋 Filtro de Dados de Confecção")
@@ -799,7 +855,8 @@ def render_Confecção_tab():
                 df_filtered.loc[mask, 'Percentual_Ret'] = (df_filtered.loc[mask, 'Qtd Ret'] / df_filtered.loc[mask, 'Qtd']) * 100
                 linhas_before = len(df_filtered)
                 df_filtered = df_filtered[df_filtered['Percentual_Ret'] < 95]
-                df_filtered = df_filtered.drop(columns=['Percentual_Ret'])
+                if 'Percentual_Ret' in df_filtered.columns:
+                    df_filtered = df_filtered.drop(columns=['Percentual_Ret'])
                 linhas_removidas = linhas_before - len(df_filtered)
                 if linhas_removidas > 0:
                     st.info(f"ℹ️ {linhas_removidas} linha(s) removida(s) por terem Qtd Ret ≥ 95% da Qtd.")
@@ -861,6 +918,7 @@ def render_Confecção_tab():
             
         except Exception as e:
             st.error(f"Ocorreu um erro ao processar o arquivo: {e}")
+            st.exception(e)
     else:
         st.info("👆 Por favor, faça o upload de um arquivo Excel acima para iniciar.")
 
@@ -954,6 +1012,7 @@ def render_agendamento_tab():
                     df_filtered = df_filtered[df_filtered['Status'].isin(status_filtro)]
                 else:
                     st.error("❌ Colunas necessárias não encontradas: 'Qtd', 'Saldo Atual' ou 'Saldo Calc.'")
+                    st.info("Colunas disponíveis: " + ", ".join(df_filtered.columns))
                     st.stop()
                 
                 # Métricas
@@ -1019,26 +1078,34 @@ def render_agendamento_tab():
         
         except Exception as e:
             st.error(f"Erro ao processar o arquivo: {e}")
+            st.exception(e)
     
     else:
         st.info("👆 Por favor, carregue um arquivo Excel para começar.")
-        st.markdown("""
-            ### 📝 Formato esperado do arquivo Excel:
-            
-            O arquivo deve conter as seguintes colunas:
-            - **Pedido** - Identificador único do pedido
-            - **Cliente** - Nome do cliente
-            - **Cód Prod** - Código do produto
-            - **Produto** - Nome do produto
-            - **Qtd** - Quantidade solicitada
-            - **R$ Total Calc.** - Valor total do pedido
-            - **Operação Produtiva** - Tipo de operação
-            - **Segmento** - Segmento de mercado
-            - **Saldo Atual** - Estoque atual disponível
-            - **Coleção** - Coleção do produto
-            - **Saldo Calc.** - Estoque calculado/projetado
-            - **Dt. Agendamento** - Data do agendamento
-        """)
+        with st.expander("📝 Ver formato esperado do arquivo"):
+            st.markdown("""
+                ### Formato esperado do arquivo Excel:
+                
+                O arquivo deve conter as seguintes colunas:
+                - **Pedido** - Identificador único do pedido
+                - **Cliente** - Nome do cliente
+                - **Cód Prod** - Código do produto
+                - **Produto** - Nome do produto
+                - **Qtd** - Quantidade solicitada
+                - **R$ Total Calc.** - Valor total do pedido
+                - **Operação Produtiva** - Tipo de operação
+                - **Segmento** - Segmento de mercado
+                - **Saldo Atual** - Estoque atual disponível
+                - **Coleção** - Coleção do produto
+                - **Saldo Calc.** - Estoque calculado/projetado
+                - **Dt. Agendamento** - Data do agendamento
+                
+                ### Como a priorização funciona:
+                
+                - 🔴 **PRIORIDADE**: Quando Qtd > Saldo Calc. (sem estoque previsão)
+                - 🟠 **ATENÇÃO**: Quando Qtd > Saldo Atual (sem estoque atual)
+                - 🟢 **OK**: Quando há estoque suficiente
+            """)
 
 def render_dashboard():
     """Renderiza dashboard com visão geral"""
@@ -1088,7 +1155,7 @@ def render_dashboard():
             - ✅ Cards interativos
             - ✅ Performance otimizada
             - ✅ Download rápido
-            - ✅ Chaves únicas garantidas
+            - ✅ Tratamento seguro de dados
         """)
 
 # ==================== EXECUÇÃO PRINCIPAL ====================
