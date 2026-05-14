@@ -32,62 +32,150 @@ st.markdown("""
             margin: 0.5rem 0 0 0;
             opacity: 0.9;
         }
-        .order-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 10px 0;
-            background-color: #f9f9f9;
-            transition: all 0.2s ease;
-        }
-        .order-card:hover {
-            transform: translateX(5px);
+        
+        /* Cards de cliente - versão melhorada */
+        .client-card {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
         }
-        .order-card.prioridade {
-            border-left: 4px solid #f44336;
-            background: linear-gradient(90deg, #fff5f5 0%, #f9f9f9 100%);
+        .client-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
         }
-        .order-card.atencao {
-            border-left: 4px solid #ff9800;
-            background: linear-gradient(90deg, #fff9f0 0%, #f9f9f9 100%);
+        .client-card.prioridade {
+            border: 2px solid #f44336;
+            background: linear-gradient(135deg, #fff5f5 0%, white 100%);
         }
-        .order-card.ok {
-            border-left: 4px solid #4caf50;
+        .client-card.atencao {
+            border: 2px solid #ff9800;
+            background: linear-gradient(135deg, #fff9f0 0%, white 100%);
         }
-        .order-header {
+        .client-card.ok {
+            border: 2px solid #4caf50;
+            background: linear-gradient(135deg, #f1f8e9 0%, white 100%);
+        }
+        
+        .client-header {
+            padding: 15px 20px;
+            cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .client-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .client-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+        }
+        .client-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .client-badge.prioridade {
+            background-color: #f44336;
+            color: white;
+        }
+        .client-badge.atencao {
+            background-color: #ff9800;
+            color: white;
+        }
+        .client-badge.ok {
+            background-color: #4caf50;
+            color: white;
+        }
+        .client-stats {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            background: rgba(0,0,0,0.05);
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        
+        /* Cards de pedido melhorados */
+        .order-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: white;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .order-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        }
+        .order-card.prioridade {
+            border-left: 5px solid #f44336;
+            background: linear-gradient(90deg, #fff5f5 0%, white 100%);
+        }
+        .order-card.atencao {
+            border-left: 5px solid #ff9800;
+            background: linear-gradient(90deg, #fff9f0 0%, white 100%);
+        }
+        .order-card.ok {
+            border-left: 5px solid #4caf50;
+            background: white;
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .order-number {
             font-weight: bold;
             font-size: 16px;
             color: #333;
         }
-        .order-status {
+        .order-product {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .order-status-badge {
             display: inline-block;
             padding: 4px 12px;
             border-radius: 20px;
             font-weight: bold;
             font-size: 11px;
         }
-        .status-prioridade {
+        .order-status-badge.prioridade {
             background-color: #f44336;
             color: white;
         }
-        .status-atencao {
+        .order-status-badge.atencao {
             background-color: #ff9800;
             color: white;
         }
-        .status-ok {
+        .order-status-badge.ok {
             background-color: #4caf50;
             color: white;
         }
+        
         .order-details {
-            margin-top: 10px;
-            padding-top: 10px;
+            margin-top: 12px;
+            padding-top: 12px;
             border-top: 1px solid #e0e0e0;
             font-size: 13px;
         }
@@ -98,21 +186,24 @@ st.markdown("""
             margin-top: 10px;
         }
         .detail-item {
-            background: white;
-            padding: 8px;
-            border-radius: 6px;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
         }
         .detail-label {
             font-weight: bold;
             color: #666;
             font-size: 11px;
             text-transform: uppercase;
+            margin-bottom: 5px;
         }
         .detail-value {
             color: #333;
             font-size: 14px;
-            margin-top: 4px;
+            font-weight: 500;
         }
+        
+        /* Métricas */
         .metric-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 1rem;
@@ -128,6 +219,16 @@ st.markdown("""
             font-size: 0.9rem;
             opacity: 0.9;
         }
+        
+        /* Filtros */
+        .filter-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        /* Botões */
         .stButton > button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -139,6 +240,21 @@ st.markdown("""
         .stButton > button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* Progress bar personalizada */
+        .progress-bar {
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+            padding: 3px 8px;
+            font-size: 11px;
+            text-align: right;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -153,63 +269,83 @@ def safe_str(value):
     return str(value)
 
 def safe_join(values, separator=' / ', max_items=3):
-    """Junta valores de forma segura, convertendo todos para string"""
+    """Junta valores de forma segura"""
     if values is None or len(values) == 0:
         return 'N/A'
     str_values = [safe_str(v) for v in list(values)[:max_items] if safe_str(v)]
     return separator.join(str_values) if str_values else 'N/A'
 
 def safe_hash(*args):
-    """Gera hash seguro a partir de múltiplos argumentos"""
+    """Gera hash seguro"""
     str_args = [safe_str(arg) for arg in args]
     combined = "_".join(str_args)
     return combined.replace(" ", "_").replace("/", "_").replace("\\", "_").replace("|", "_").replace(":", "_")
 
 def get_status(qtd, saldo_atual, saldo_calculado):
-    """Determina o status do pedido baseado nas quantidades"""
+    """Determina o status do pedido (prioridade: 3=maior, 1=menor)"""
     try:
         qtd = float(qtd) if pd.notna(qtd) else 0
         saldo_atual = float(saldo_atual) if pd.notna(saldo_atual) else 0
         saldo_calculado = float(saldo_calculado) if pd.notna(saldo_calculado) else 0
         
         if qtd > saldo_calculado:
-            return "PRIORIDADE", "prioridade"
+            return "PRIORIDADE", "prioridade", 3
         elif qtd > saldo_atual:
-            return "ATENÇÃO", "atencao"
+            return "ATENÇÃO", "atencao", 2
         else:
-            return "OK", "ok"
+            return "OK", "ok", 1
     except:
-        return "OK", "ok"
+        return "OK", "ok", 1
 
-# ==================== FUNÇÃO DE CARDS CORRIGIDA ====================
-def create_enhanced_client_cards(df_filtered):
-    """Cria cards de clientes com menu interativo para detalhamento de pedidos"""
+def get_client_status(pedidos_df):
+    """Retorna o status mais alto entre os pedidos do cliente"""
+    if 'Status' not in pedidos_df.columns or len(pedidos_df) == 0:
+        return "OK", "ok", 1
+    
+    status_priority = {"PRIORIDADE": 3, "ATENÇÃO": 2, "OK": 1}
+    pedidos_df['Status_priority'] = pedidos_df['Status'].map(status_priority).fillna(1)
+    max_priority = pedidos_df['Status_priority'].max()
+    
+    for status, priority in status_priority.items():
+        if priority == max_priority:
+            if status == "PRIORIDADE":
+                return "PRIORIDADE", "prioridade", 3
+            elif status == "ATENÇÃO":
+                return "ATENÇÃO", "atencao", 2
+            else:
+                return "OK", "ok", 1
+    return "OK", "ok", 1
+
+# ==================== FUNÇÃO DE CARDS MELHORADA ====================
+def create_enhanced_client_cards(df_filtered, status_filter=None):
+    """Cria cards de clientes com visualização melhorada e filtro por status"""
     
     if 'Cliente' not in df_filtered.columns:
         st.warning("Coluna 'Cliente' não encontrada no arquivo.")
         return
     
-    # Converter Cliente para string
+    # Converter e preparar dados
     df_filtered = df_filtered.copy()
     df_filtered['Cliente_str'] = df_filtered['Cliente'].fillna("Desconhecido").astype(str)
+    
+    # Adicionar status aos pedidos se não existir
+    if 'Status' not in df_filtered.columns:
+        df_filtered['Status'] = df_filtered.apply(
+            lambda row: get_status(row.get('Qtd', 0), row.get('Saldo Atual', 0), row.get('Saldo Calc.', 0))[0],
+            axis=1
+        )
+    
+    # Calcular status do cliente e agregar dados
+    clientes_data = []
     clients = sorted(df_filtered['Cliente_str'].unique(), key=str)
     
-    # Inicializar estados
-    if 'expanded_clients' not in st.session_state:
-        st.session_state.expanded_clients = {}
-    if 'expanded_orders' not in st.session_state:
-        st.session_state.expanded_orders = {}
-    
-    # Para cada cliente
     for client in clients:
         df_client = df_filtered[df_filtered['Cliente_str'] == client].copy()
         
-        # Verificar se tem a coluna Pedido
+        # Agregar pedidos
         if 'Pedido' in df_client.columns:
-            # Converter Pedido para string
             df_client['Pedido_str'] = df_client['Pedido'].apply(safe_str)
             
-            # Agrupar por pedido com funções seguras
             try:
                 pedidos_agrupados = df_client.groupby('Pedido_str', as_index=False).agg({
                     'Produto': lambda x: safe_join(x.unique(), ' / ', 3),
@@ -225,14 +361,12 @@ def create_enhanced_client_cards(df_filtered):
                     'Status': 'first'
                 })
                 pedidos_agrupados.rename(columns={'Pedido_str': 'Pedido'}, inplace=True)
-                
-                # Adicionar contagem de itens
                 itens_por_pedido = df_client.groupby('Pedido_str').size()
-                pedidos_agrupados['Qtd_Itens'] = pedidos_agrupados['Pedido'].map(itens_por_pedido)
-                
-            except Exception as e:
-                st.error(f"Erro ao agrupar pedidos para o cliente {client}: {e}")
-                continue
+                pedidos_agrupados['Qtd_Itens'] = pedidos_agrupados['Pedido'].map(itens_por_pedido).fillna(1)
+            except:
+                pedidos_agrupados = df_client.copy()
+                pedidos_agrupados['Pedido'] = 'N/A'
+                pedidos_agrupados['Qtd_Itens'] = 1
         else:
             pedidos_agrupados = df_client.copy()
             pedidos_agrupados['Pedido'] = 'N/A'
@@ -244,202 +378,257 @@ def create_enhanced_client_cards(df_filtered):
         total_atencao = len(pedidos_agrupados[pedidos_agrupados['Status'] == 'ATENÇÃO']) if 'Status' in pedidos_agrupados.columns else 0
         total_ok = len(pedidos_agrupados[pedidos_agrupados['Status'] == 'OK']) if 'Status' in pedidos_agrupados.columns else 0
         
-        # Status do cliente
-        if total_prioridade > 0:
-            status_text = f"🔴 {total_prioridade} Prioridade(s)"
-        elif total_atencao > 0:
-            status_text = f"🟠 {total_atencao} Atenção(ões)"
-        else:
-            status_text = f"🟢 {total_ok} OK"
+        # Status do cliente (mais alto)
+        client_status_text, client_status_class, client_priority = get_client_status(pedidos_agrupados)
+        
+        # Calcular percentual de conclusão (exemplo: % de pedidos OK)
+        percent_ok = (total_ok / total_pedidos * 100) if total_pedidos > 0 else 0
+        
+        # Aplicar filtro de status do cliente
+        if status_filter:
+            if status_filter == "PRIORIDADE" and client_priority != 3:
+                continue
+            elif status_filter == "ATENÇÃO" and client_priority != 2:
+                continue
+            elif status_filter == "OK" and client_priority != 1:
+                continue
+        
+        clientes_data.append({
+            'client': client,
+            'pedidos': pedidos_agrupados,
+            'total_pedidos': total_pedidos,
+            'total_prioridade': total_prioridade,
+            'total_atencao': total_atencao,
+            'total_ok': total_ok,
+            'client_status_text': client_status_text,
+            'client_status_class': client_status_class,
+            'percent_ok': percent_ok
+        })
+    
+    # Inicializar estados
+    if 'expanded_clients' not in st.session_state:
+        st.session_state.expanded_clients = {}
+    if 'expanded_orders' not in st.session_state:
+        st.session_state.expanded_orders = {}
+    
+    # Renderizar cards
+    for client_data in clientes_data:
+        client = client_data['client']
+        pedidos_agrupados = client_data['pedidos']
+        total_pedidos = client_data['total_pedidos']
+        total_prioridade = client_data['total_prioridade']
+        total_atencao = client_data['total_atencao']
+        total_ok = client_data['total_ok']
+        client_status_text = client_data['client_status_text']
+        client_status_class = client_data['client_status_class']
+        percent_ok = client_data['percent_ok']
         
         # Estado do card
         client_key = safe_hash("client", client)
         is_client_expanded = st.session_state.expanded_clients.get(client_key, False)
         
-        # Card do cliente
-        with st.container():
-            col1, col2, col3 = st.columns([3, 2, 1])
-            
-            with col1:
-                st.markdown(f"### 👤 {client}")
-            
-            with col2:
-                st.markdown(f"""
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <span style="background: #f0f0f0; padding: 5px 10px; border-radius: 8px;">📦 {total_pedidos} pedido(s)</span>
-                        <span style="background: #f0f0f0; padding: 5px 10px; border-radius: 8px;">{status_text}</span>
+        # Card do cliente com borda colorida
+        st.markdown(f"""
+            <div class="client-card {client_status_class}">
+                <div class="client-header">
+                    <div class="client-info">
+                        <span class="client-name">👤 {client}</span>
+                        <span class="client-badge {client_status_class}">{client_status_text}</span>
                     </div>
-                """, unsafe_allow_html=True)
-            
-            with col3:
-                button_label = "🔽 Detalhes" if not is_client_expanded else "🔼 Fechar"
-                if st.button(button_label, key=f"btn_{client_key}", use_container_width=True):
-                    st.session_state.expanded_clients[client_key] = not is_client_expanded
-                    st.rerun()
-            
-            st.markdown("---")
-            
-            # Conteúdo expandido
-            if is_client_expanded:
-                if len(pedidos_agrupados) == 0:
-                    st.info("Nenhum pedido encontrado para este cliente.")
-                else:
-                    cols = st.columns(2)
-                    
-                    for idx, (_, row) in enumerate(pedidos_agrupados.iterrows()):
-                        col_idx = idx % 2
-                        
-                        with cols[col_idx]:
-                            pedido_id = safe_str(row.get('Pedido', 'N/A'))
-                            produto = row.get('Produto', 'N/A')
-                            
-                            # Converter valores numéricos
-                            try:
-                                qtd = float(row.get('Qtd', 0)) if pd.notna(row.get('Qtd')) else 0
-                                saldo_atual = float(row.get('Saldo Atual', 0)) if pd.notna(row.get('Saldo Atual')) else 0
-                                saldo_calc = float(row.get('Saldo Calc.', 0)) if pd.notna(row.get('Saldo Calc.')) else 0
-                            except:
-                                qtd = 0
-                                saldo_atual = 0
-                                saldo_calc = 0
-                            
-                            qtd_itens = row.get('Qtd_Itens', 1)
-                            if pd.isna(qtd_itens):
-                                qtd_itens = 1
-                            
-                            status_text_pedido, status_class = get_status(qtd, saldo_atual, saldo_calc)
-                            
-                            # Formatar data
-                            data_str = "N/A"
-                            if 'Dt. Agendamento' in row and pd.notna(row['Dt. Agendamento']):
-                                try:
-                                    if hasattr(row['Dt. Agendamento'], 'strftime'):
-                                        data_str = row['Dt. Agendamento'].strftime('%d/%m/%Y')
-                                    else:
-                                        data_str = str(row['Dt. Agendamento'])
-                                except:
-                                    data_str = str(row['Dt. Agendamento'])
-                            
-                            # Formatar valor
-                            valor_str = "N/A"
-                            if 'R$ Total Calc.' in row and pd.notna(row['R$ Total Calc.']):
-                                try:
-                                    valor = float(row['R$ Total Calc.'])
-                                    valor_str = f"R$ {valor:,.2f}"
-                                except:
-                                    valor_str = str(row['R$ Total Calc.'])
-                            
-                            # Estado do pedido
-                            order_key = safe_hash("order", client, pedido_id)
-                            is_order_expanded = st.session_state.expanded_orders.get(order_key, False)
-                            status_class_lower = status_class.lower()
-                            
-                            # Card do pedido
-                            st.markdown(f"""
-                                <div class="order-card {status_class_lower}">
-                                    <div class="order-header">
-                                        <div>
-                                            <span class="order-number">Pedido #{pedido_id}</span>
-                                            <div style="font-size: 12px; color: #666; margin-top: 4px;">
-                                                {safe_str(produto)[:100]}{'...' if len(safe_str(produto)) > 100 else ''}
-                                            </div>
-                                            <div style="font-size: 11px; color: #999; margin-top: 2px;">
-                                                📦 {qtd_itens} item(ns) no pedido
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <span class="order-status status-{status_class_lower}">{status_text_pedido}</span>
-                                        </div>
-                                    </div>
-                            """, unsafe_allow_html=True)
-                            
-                            btn_key = safe_hash("detail", order_key)
-                            if st.button(f"📋 Ver Detalhes Completos", key=btn_key, use_container_width=True):
-                                st.session_state.expanded_orders[order_key] = not is_order_expanded
-                                st.rerun()
-                            
-                            if is_order_expanded:
-                                cod_prod = row.get('Cód Prod', 'N/A')
-                                if pd.isna(cod_prod):
-                                    cod_prod = 'N/A'
-                                
-                                st.markdown(f"""
-                                    <div class="order-details">
-                                        <div class="detail-grid">
-                                            <div class="detail-item">
-                                                <div class="detail-label">📦 Produto(s)</div>
-                                                <div class="detail-value">{safe_str(produto)}</div>
-                                            </div>
-                                            <div class="detail-item">
-                                                <div class="detail-label">🔢 Código(s)</div>
-                                                <div class="detail-value">{safe_str(cod_prod)}</div>
-                                            </div>
-                                            <div class="detail-item">
-                                                <div class="detail-label">📅 Data Agendamento</div>
-                                                <div class="detail-value">{data_str}</div>
-                                            </div>
-                                            <div class="detail-item">
-                                                <div class="detail-label">🏭 Operação</div>
-                                                <div class="detail-value">{safe_str(row.get('Operação Produtiva', 'N/A'))}</div>
-                                            </div>
-                                            <div class="detail-item">
-                                                <div class="detail-label">📊 Segmento</div>
-                                                <div class="detail-value">{safe_str(row.get('Segmento', 'N/A'))}</div>
-                                            </div>
-                                            <div class="detail-item">
-                                                <div class="detail-label">🎨 Coleção</div>
-                                                <div class="detail-value">{safe_str(row.get('Coleção', 'N/A'))}</div>
-                                            </div>
-                                            <div class="detail-item">
-                                                <div class="detail-label">📊 Quantidade Pedida</div>
-                                                <div class="detail-value">{qtd:,.0f}</div>
-                                            </div>
-                                            <div class="detail-item">
-                                                <div class="detail-label">📦 Saldo Atual</div>
-                                                <div class="detail-value">{saldo_atual:,.0f}</div>
-                                            </div>
-                                            <div class="detail-item">
-                                                <div class="detail-label">📈 Saldo Calculado</div>
-                                                <div class="detail-value">{saldo_calc:,.0f}</div>
-                                            </div>
-                                            <div class="detail-item">
-                                                <div class="detail-label">💰 Valor Total</div>
-                                                <div class="detail-value">{valor_str}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                """, unsafe_allow_html=True)
-                            
-                            st.markdown("</div>", unsafe_allow_html=True)
-                
-                # Rodapé do cliente
-                st.markdown(f"""
-                    <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 12px; border-radius: 8px; margin-top: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                            <span><strong>📊 Resumo do Cliente</strong></span>
-                            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                                <span>📦 Total: {total_pedidos} pedido(s)</span>
-                                <span>🔴 Prioridade: {total_prioridade}</span>
-                                <span>🟠 Atenção: {total_atencao}</span>
-                                <span>🟢 OK: {total_ok}</span>
-                            </div>
-                        </div>
+                    <div class="client-stats">
+                        <div class="stat-item">📦 {total_pedidos} pedido(s)</div>
+                        <div class="stat-item">🔴 {total_prioridade}</div>
+                        <div class="stat-item">🟠 {total_atencao}</div>
+                        <div class="stat-item">🟢 {total_ok}</div>
                     </div>
-                """, unsafe_allow_html=True)
-                st.markdown("<br>", unsafe_allow_html=True)
+                </div>
+        """, unsafe_allow_html=True)
+        
+        # Barra de progresso
+        st.markdown(f"""
+            <div style="padding: 0 20px;">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {percent_ok}%;">
+                        {percent_ok:.0f}% OK
+                    </div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # Botão expandir
+        col1, col2, col3 = st.columns([1, 1, 4])
+        with col2:
+            button_label = "🔽 Ver Pedidos" if not is_client_expanded else "🔼 Fechar"
+            if st.button(button_label, key=f"btn_{client_key}", use_container_width=True):
+                st.session_state.expanded_clients[client_key] = not is_client_expanded
+                st.rerun()
+        
+        # Conteúdo expandido
+        if is_client_expanded:
+            st.markdown('<div style="padding: 0 20px 20px 20px;">', unsafe_allow_html=True)
+            
+            if len(pedidos_agrupados) == 0:
+                st.info("Nenhum pedido encontrado para este cliente.")
             else:
-                # Resumo compacto
-                if total_pedidos > 0:
-                    st.markdown(f"""
-                        <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
-                            <div style="display: flex; gap: 20px; font-size: 14px; flex-wrap: wrap;">
-                                <span>📦 Total: {total_pedidos} pedido(s)</span>
-                                <span>🔴 Prioridade: {total_prioridade}</span>
-                                <span>🟠 Atenção: {total_atencao}</span>
-                                <span>🟢 OK: {total_ok}</span>
+                # Grid de pedidos
+                cols = st.columns(2)
+                
+                for idx, (_, row) in enumerate(pedidos_agrupados.iterrows()):
+                    col_idx = idx % 2
+                    
+                    with cols[col_idx]:
+                        pedido_id = safe_str(row.get('Pedido', 'N/A'))
+                        produto = row.get('Produto', 'N/A')
+                        
+                        # Converter valores
+                        try:
+                            qtd = float(row.get('Qtd', 0)) if pd.notna(row.get('Qtd')) else 0
+                            saldo_atual = float(row.get('Saldo Atual', 0)) if pd.notna(row.get('Saldo Atual')) else 0
+                            saldo_calc = float(row.get('Saldo Calc.', 0)) if pd.notna(row.get('Saldo Calc.')) else 0
+                        except:
+                            qtd = 0
+                            saldo_atual = 0
+                            saldo_calc = 0
+                        
+                        qtd_itens = row.get('Qtd_Itens', 1)
+                        if pd.isna(qtd_itens):
+                            qtd_itens = 1
+                        
+                        status_text, status_class, _ = get_status(qtd, saldo_atual, saldo_calc)
+                        
+                        # Calcular percentual de estoque
+                        percent_estoque = (saldo_atual / qtd * 100) if qtd > 0 else 0
+                        
+                        # Formatar data
+                        data_str = "N/A"
+                        if 'Dt. Agendamento' in row and pd.notna(row['Dt. Agendamento']):
+                            try:
+                                if hasattr(row['Dt. Agendamento'], 'strftime'):
+                                    data_str = row['Dt. Agendamento'].strftime('%d/%m/%Y')
+                                else:
+                                    data_str = str(row['Dt. Agendamento'])
+                            except:
+                                data_str = str(row['Dt. Agendamento'])
+                        
+                        # Formatar valor
+                        valor_str = "N/A"
+                        if 'R$ Total Calc.' in row and pd.notna(row['R$ Total Calc.']):
+                            try:
+                                valor = float(row['R$ Total Calc.'])
+                                valor_str = f"R$ {valor:,.2f}"
+                            except:
+                                valor_str = str(row['R$ Total Calc.'])
+                        
+                        # Estado do pedido
+                        order_key = safe_hash("order", client, pedido_id)
+                        is_order_expanded = st.session_state.expanded_orders.get(order_key, False)
+                        
+                        # Card do pedido
+                        st.markdown(f"""
+                            <div class="order-card {status_class}">
+                                <div class="order-header">
+                                    <div>
+                                        <div class="order-number">Pedido #{pedido_id}</div>
+                                        <div class="order-product">
+                                            📦 {safe_str(produto)[:80]}{'...' if len(safe_str(produto)) > 80 else ''}
+                                        </div>
+                                        <div style="font-size: 11px; color: #999; margin-top: 5px;">
+                                            📋 {qtd_itens} item(ns) no pedido
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="order-status-badge {status_class}">{status_text}</span>
+                                    </div>
+                                </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Informações resumidas
+                        st.markdown(f"""
+                            <div style="display: flex; gap: 15px; margin: 10px 0; font-size: 12px; flex-wrap: wrap;">
+                                <span>📊 Qtd: {qtd:,.0f}</span>
+                                <span>📦 Saldo: {saldo_atual:,.0f}</span>
+                                <span>📈 Projetado: {saldo_calc:,.0f}</span>
+                                <span>💰 {valor_str}</span>
                             </div>
-                        </div>
-                    """, unsafe_allow_html=True)
+                        """, unsafe_allow_html=True)
+                        
+                        # Barra de estoque
+                        estoque_class = "prioridade" if percent_estoque < 30 else "atencao" if percent_estoque < 70 else "ok"
+                        bar_color = "#f44336" if percent_estoque < 30 else "#ff9800" if percent_estoque < 70 else "#4caf50"
+                        st.markdown(f"""
+                            <div style="margin: 10px 0;">
+                                <div style="font-size: 11px; margin-bottom: 3px;">Estoque disponível: {percent_estoque:.0f}%</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: {percent_estoque}%; background: {bar_color};">
+                                    </div>
+                                </div>
+                            </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Botão detalhes
+                        btn_key = safe_hash("detail", order_key)
+                        if st.button(f"🔍 Detalhes do Pedido", key=btn_key, use_container_width=True):
+                            st.session_state.expanded_orders[order_key] = not is_order_expanded
+                            st.rerun()
+                        
+                        # Detalhes expandidos
+                        if is_order_expanded:
+                            cod_prod = row.get('Cód Prod', 'N/A')
+                            if pd.isna(cod_prod):
+                                cod_prod = 'N/A'
+                            
+                            st.markdown(f"""
+                                <div class="order-details">
+                                    <div class="detail-grid">
+                                        <div class="detail-item">
+                                            <div class="detail-label">📦 Produto(s)</div>
+                                            <div class="detail-value">{safe_str(produto)}</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">🔢 Código(s)</div>
+                                            <div class="detail-value">{safe_str(cod_prod)}</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">📅 Data Agendamento</div>
+                                            <div class="detail-value">{data_str}</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">🏭 Operação</div>
+                                            <div class="detail-value">{safe_str(row.get('Operação Produtiva', 'N/A'))}</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">📊 Segmento</div>
+                                            <div class="detail-value">{safe_str(row.get('Segmento', 'N/A'))}</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">🎨 Coleção</div>
+                                            <div class="detail-value">{safe_str(row.get('Coleção', 'N/A'))}</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">📊 Quantidade Pedida</div>
+                                            <div class="detail-value">{qtd:,.0f}</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">📦 Saldo Atual</div>
+                                            <div class="detail-value">{saldo_atual:,.0f}</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">📈 Saldo Calculado</div>
+                                            <div class="detail-value">{saldo_calc:,.0f}</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">💰 Valor Total</div>
+                                            <div class="detail-value">{valor_str}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            """, unsafe_allow_html=True)
+                        
+                        st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # ==================== FUNÇÃO DE CALENDÁRIO ====================
 def create_calendar_view(df_filtered):
@@ -466,14 +655,15 @@ def create_calendar_view(df_filtered):
         qtd = row.get('Qtd', 0)
         saldo_atual = row.get('Saldo Atual', 0)
         saldo_calc = row.get('Saldo Calc.', 0)
-        status_text, _ = get_status(qtd, saldo_atual, saldo_calc)
+        status_text, status_class, _ = get_status(qtd, saldo_atual, saldo_calc)
         
         agendamentos[data].append({
             'pedido': safe_str(row.get('Pedido', 'N/A')),
             'produto': safe_str(row.get('Produto', 'N/A'))[:50],
             'cliente': safe_str(row.get('Cliente', 'N/A')),
             'qtd': qtd,
-            'status': status_text
+            'status': status_text,
+            'status_class': status_class
         })
     
     st.subheader("📅 Calendário de Agendamentos")
@@ -509,15 +699,30 @@ def create_calendar_view(df_filtered):
                     
                     if data_dia in agendamentos:
                         pedidos_dia = agendamentos[data_dia]
+                        # Determinar cor do dia baseada no pior status
+                        has_prioridade = any(p['status_class'] == 'prioridade' for p in pedidos_dia)
+                        has_atencao = any(p['status_class'] == 'atencao' for p in pedidos_dia)
+                        
+                        if has_prioridade:
+                            bg_color = "#f8d7da"
+                            border_color = "#f44336"
+                        elif has_atencao:
+                            bg_color = "#fff3cd"
+                            border_color = "#ff9800"
+                        else:
+                            bg_color = "#d4edda"
+                            border_color = "#4caf50"
+                        
                         with col:
                             with st.expander(f"📌 **{dia}** ({len(pedidos_dia)} pedido(s))", expanded=False):
                                 for pedido in pedidos_dia:
+                                    status_badge_class = pedido['status_class']
                                     st.markdown(f"""
-                                        <div style="margin-bottom: 10px; padding: 8px; border-left: 3px solid #ddd; background-color: #f5f5f5;">
+                                        <div style="margin-bottom: 10px; padding: 8px; border-left: 3px solid {border_color}; background-color: #f5f5f5;">
                                             <b>Pedido #{pedido['pedido']}</b><br>
                                             <b>Cliente:</b> {pedido['cliente']}<br>
                                             <b>Produto:</b> {pedido['produto']}<br>
-                                            <b>Status:</b> {pedido['status']}
+                                            <span class="order-status-badge {status_badge_class}">{pedido['status']}</span>
                                         </div>
                                     """, unsafe_allow_html=True)
                     else:
@@ -541,22 +746,22 @@ def main():
         modulo = st.radio(
             "Selecione o módulo:",
             ["📋 Filtro de Confecção", "📅 Agendamento de Pedidos", "📊 Dashboard"],
-            index=1  # Mudar para Agendamento como padrão para teste
+            index=1
         )
         
         st.markdown("---")
         
         with st.expander("ℹ️ Sobre o Sistema"):
             st.markdown("""
-                **Versão:** 3.3  
+                **Versão:** 4.0  
                 **Desenvolvido para:** Gestão de Confecção  
                 
                 ### Funcionalidades:
-                - ✅ Filtro avançado de dados
-                - ✅ Agendamento de pedidos
-                - ✅ Cards interativos por cliente
+                - ✅ Cards com status do cliente
+                - ✅ Filtro por status de cliente
+                - ✅ Barra de progresso por cliente
+                - ✅ Visualização de estoque
                 - ✅ Detalhamento expansível
-                - ✅ Priorização automática
             """)
         
         st.markdown("---")
@@ -567,7 +772,7 @@ def main():
         with col2:
             st.markdown(f"📅 {datetime.now().strftime('%d/%m/%Y')}")
     
-    # Conteúdo baseado no módulo
+    # Conteúdo
     if modulo == "📋 Filtro de Confecção":
         render_Confecção()
     elif modulo == "📅 Agendamento de Pedidos":
@@ -656,7 +861,7 @@ def render_agendamento():
             df = pd.read_excel(uploaded_file)
             df.columns = df.columns.str.strip()
             
-            st.success(f"Arquivo carregado com sucesso! {len(df)} registros encontrados.")
+            st.success(f"✅ Arquivo carregado! {len(df)} registros encontrados.")
             
             if 'Dt. Agendamento' in df.columns:
                 df['Dt. Agendamento'] = pd.to_datetime(df['Dt. Agendamento'], errors='coerce')
@@ -666,6 +871,7 @@ def render_agendamento():
             
             df_filtered = df.copy()
             
+            # Filtros básicos
             if 'Operação Produtiva' in df.columns:
                 ops = st.sidebar.multiselect("Operação", options=df['Operação Produtiva'].unique())
                 if ops:
@@ -675,6 +881,11 @@ def render_agendamento():
                 segs = st.sidebar.multiselect("Segmento", options=df['Segmento'].unique())
                 if segs:
                     df_filtered = df_filtered[df_filtered['Segmento'].isin(segs)]
+            
+            if 'Coleção' in df.columns:
+                cols_filter = st.sidebar.multiselect("Coleção", options=df['Coleção'].unique())
+                if cols_filter:
+                    df_filtered = df_filtered[df_filtered['Coleção'].isin(cols_filter)]
             
             if 'Cliente' in df.columns:
                 clients = st.sidebar.multiselect("Cliente", options=df['Cliente'].unique())
@@ -687,9 +898,15 @@ def render_agendamento():
                     lambda row: get_status(row['Qtd'], row['Saldo Atual'], row['Saldo Calc.'])[0],
                     axis=1
                 )
-                
-                status_filter = st.sidebar.multiselect("Status", options=["PRIORIDADE", "ATENÇÃO", "OK"], default=["PRIORIDADE", "ATENÇÃO", "OK"])
-                df_filtered = df_filtered[df_filtered['Status'].isin(status_filter)]
+            
+            # Filtro por status do cliente (novo)
+            st.sidebar.markdown("---")
+            st.sidebar.markdown("### 🎯 Filtro por Status do Cliente")
+            client_status_filter = st.sidebar.selectbox(
+                "Status do Cliente",
+                options=["Todos", "PRIORIDADE", "ATENÇÃO", "OK"],
+                index=0
+            )
             
             # Métricas
             st.markdown("---")
@@ -698,11 +915,14 @@ def render_agendamento():
                 st.metric("Total de Pedidos", len(df_filtered))
             if 'Status' in df_filtered.columns:
                 with col2:
-                    st.metric("🔴 Prioridades", len(df_filtered[df_filtered['Status'] == 'PRIORIDADE']))
+                    prioridades = len(df_filtered[df_filtered['Status'] == 'PRIORIDADE'])
+                    st.metric("🔴 Prioridades", prioridades, delta="Urgente" if prioridades > 0 else None)
                 with col3:
-                    st.metric("🟠 Atenções", len(df_filtered[df_filtered['Status'] == 'ATENÇÃO']))
+                    atencoes = len(df_filtered[df_filtered['Status'] == 'ATENÇÃO'])
+                    st.metric("🟠 Atenções", atencoes)
                 with col4:
-                    st.metric("🟢 OK", len(df_filtered[df_filtered['Status'] == 'OK']))
+                    oks = len(df_filtered[df_filtered['Status'] == 'OK'])
+                    st.metric("🟢 OK", oks)
             
             st.markdown("---")
             
@@ -711,7 +931,9 @@ def render_agendamento():
                 tab1, tab2 = st.tabs(["🎯 Cards por Cliente", "📅 Calendário"])
                 
                 with tab1:
-                    create_enhanced_client_cards(df_filtered)
+                    # Aplicar filtro de status do cliente
+                    status_map = {"Todos": None, "PRIORIDADE": "PRIORIDADE", "ATENÇÃO": "ATENÇÃO", "OK": "OK"}
+                    create_enhanced_client_cards(df_filtered, status_map[client_status_filter])
                 
                 with tab2:
                     create_calendar_view(df_filtered)
@@ -720,7 +942,7 @@ def render_agendamento():
                 st.markdown("---")
                 st.subheader("📋 Tabela Detalhada")
                 
-                display_cols = [col for col in ['Pedido', 'Cliente', 'Produto', 'Qtd', 'Saldo Calc.', 'Saldo Atual', 'Status', 'Dt. Agendamento'] if col in df_filtered.columns]
+                display_cols = [col for col in ['Pedido', 'Cliente', 'Produto', 'Qtd', 'Status', 'Dt. Agendamento'] if col in df_filtered.columns]
                 if display_cols:
                     df_display = df_filtered[display_cols].copy()
                     if 'Dt. Agendamento' in df_display.columns:
@@ -728,7 +950,12 @@ def render_agendamento():
                     st.dataframe(df_display, use_container_width=True, hide_index=True)
                     
                     csv = df_display.to_csv(index=False, encoding='utf-8-sig')
-                    st.download_button("📥 Baixar CSV", data=csv, file_name=f"pedidos_{datetime.now().strftime('%d_%m_%Y')}.csv", mime="text/csv")
+                    st.download_button(
+                        "📥 Baixar CSV", 
+                        data=csv, 
+                        file_name=f"pedidos_{datetime.now().strftime('%d_%m_%Y')}.csv", 
+                        mime="text/csv"
+                    )
             else:
                 st.warning("Nenhum pedido encontrado com os filtros selecionados.")
             
@@ -749,14 +976,19 @@ def render_agendamento():
                 - **Dt. Agendamento** - Data (opcional)
                 
                 ### Priorização:
-                - 🔴 **PRIORIDADE**: Qtd > Saldo Calc.
-                - 🟠 **ATENÇÃO**: Qtd > Saldo Atual
+                - 🔴 **PRIORIDADE**: Qtd > Saldo Calc. (sem estoque projetado)
+                - 🟠 **ATENÇÃO**: Qtd > Saldo Atual (sem estoque atual)
                 - 🟢 **OK**: Estoque suficiente
+                
+                ### Status do Cliente:
+                O status do cliente é determinado pelo pedido mais crítico:
+                - PRIORIDADE > ATENÇÃO > OK
             """)
 
 def render_dashboard():
     """Renderiza dashboard"""
     st.markdown("## 📊 Dashboard de Gestão")
+    st.markdown("Visão geral do sistema de gestão de confecção")
     
     col1, col2, col3 = st.columns(3)
     
@@ -767,9 +999,13 @@ def render_dashboard():
                 <div class="metric-label">Filtro de Confecção</div>
             </div>
             <br>
-            - ✅ Upload de arquivos Excel<br>
-            - ✅ Filtros avançados<br>
-            - ✅ Exportação de relatórios
+            <div style="padding: 10px;">
+                <b>Funcionalidades:</b><br>
+                ✅ Upload de arquivos Excel<br>
+                ✅ Filtros avançados<br>
+                ✅ Agrupamento por confecção<br>
+                ✅ Exportação de relatórios
+            </div>
         """, unsafe_allow_html=True)
     
     with col2:
@@ -779,9 +1015,14 @@ def render_dashboard():
                 <div class="metric-label">Agendamento de Pedidos</div>
             </div>
             <br>
-            - ✅ Calendário interativo<br>
-            - ✅ Cards por cliente<br>
-            - ✅ Priorização automática
+            <div style="padding: 10px;">
+                <b>Funcionalidades:</b><br>
+                ✅ Calendário interativo<br>
+                ✅ Cards por cliente com status<br>
+                ✅ Filtro por status do cliente<br>
+                ✅ Barra de progresso por cliente<br>
+                ✅ Visualização de estoque
+            </div>
         """, unsafe_allow_html=True)
     
     with col3:
@@ -791,9 +1032,13 @@ def render_dashboard():
                 <div class="metric-label">Funcionalidades</div>
             </div>
             <br>
-            - ✅ Interface responsiva<br>
-            - ✅ Cards interativos<br>
-            - ✅ Download rápido
+            <div style="padding: 10px;">
+                <b>Destaques:</b><br>
+                ✅ Status hierárquico dos clientes<br>
+                ✅ Indicadores visuais de prioridade<br>
+                ✅ Interface responsiva<br>
+                ✅ Performance otimizada
+            </div>
         """, unsafe_allow_html=True)
 
 # ==================== EXECUÇÃO ====================
