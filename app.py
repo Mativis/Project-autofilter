@@ -720,7 +720,7 @@ def render_agendamento():
                 st.markdown("---")
                 st.subheader("📋 Tabela Detalhada")
                 
-                display_cols = [col for col in ['Pedido', 'Cliente', 'Produto', 'Qtd', 'Status', 'Dt. Agendamento'] if col in df_filtered.columns]
+                display_cols = [col for col in ['Pedido', 'Cliente', 'Produto', 'Qtd', 'Saldo Calc.', 'Saldo Atual', 'Status', 'Dt. Agendamento'] if col in df_filtered.columns]
                 if display_cols:
                     df_display = df_filtered[display_cols].copy()
                     if 'Dt. Agendamento' in df_display.columns:
