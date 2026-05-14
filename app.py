@@ -484,18 +484,7 @@ def create_enhanced_client_cards(df_filtered, status_filter=None, show_details=T
                     </div>
                 </div>
         """, unsafe_allow_html=True)
-        
-        # Barra de progresso
-        st.markdown(f"""
-            <div style="padding: 0 20px;">
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: {percent_ok}%;">
-                        {percent_ok:.0f}% OK
-                    </div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
+                
         # Botões
         col1, col2, col3 = st.columns([1, 1, 4])
         with col1:
