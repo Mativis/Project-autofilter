@@ -8,8 +8,8 @@ from collections import defaultdict
 
 # Configuração da página (DEVE ser o primeiro comando Streamlit)
 st.set_page_config(
-    page_title="Sistema de Gestão de Confecção",
-    page_icon="🏭",
+    page_title="Ferramentas de Gestão de Confecção",
+    page_icon="🛠️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
