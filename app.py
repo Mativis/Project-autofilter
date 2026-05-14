@@ -783,25 +783,25 @@ def main():
     
     # Conteúdo
     if modulo == "📋 Filtro de Confecção":
-        render_confeccao()
+        render_Confecção()
     elif modulo == "📅 Agendamento de Pedidos":
         render_agendamento()
     else:
         render_dashboard()
 
-def render_confeccao():
+def render_Confecção():
     """Renderiza o módulo de filtro de confecção"""
     st.markdown("## 📋 Filtro de Dados de Confecção")
     st.markdown("Faça o upload do seu banco de dados em Excel para começar.")
     
-    uploaded_file = st.file_uploader("Selecione o arquivo Excel", type=["xlsx", "xls"], key="confeccao_file")
+    uploaded_file = st.file_uploader("Selecione o arquivo Excel", type=["xlsx", "xls"], key="Confecção_file")
     
     if uploaded_file is not None:
         try:
             df = pd.read_excel(uploaded_file)
             df.columns = df.columns.str.strip()
             
-            expected_columns = ['Compra', 'Cód Confec', 'Confeccionado', 'Qtd', 'Qtd Ret', 'Saldo', 'Confeccao']
+            expected_columns = ['Compra', 'Cód Confec', 'Confeccionado', 'Qtd', 'Qtd Ret', 'Saldo', 'Confecção']
             available_cols = [col for col in expected_columns if col in df.columns]
             
             if not available_cols:
@@ -814,12 +814,12 @@ def render_confeccao():
             # Filtros
             st.sidebar.markdown("## 🔍 Filtros")
             
-            if 'Confeccao' in df_filtered.columns:
-                df_filtered['Confeccao'] = df_filtered['Confeccao'].fillna("Vazio").astype(str)
-                confeccoes = sorted(df_filtered['Confeccao'].unique())
+            if 'Confecção' in df_filtered.columns:
+                df_filtered['Confecção'] = df_filtered['Confecção'].fillna("Vazio").astype(str)
+                confeccoes = sorted(df_filtered['Confecção'].unique())
                 selecionadas = st.sidebar.multiselect("Confecção:", options=confeccoes, default=confeccoes)
                 if selecionadas:
-                    df_filtered = df_filtered[df_filtered['Confeccao'].isin(selecionadas)]
+                    df_filtered = df_filtered[df_filtered['Confecção'].isin(selecionadas)]
             
             # Processamento numérico
             cols_numericas = [col for col in ['Qtd', 'Qtd Ret', 'Saldo'] if col in df_filtered.columns]
@@ -849,7 +849,7 @@ def render_confeccao():
             st.download_button(
                 label="⬇️ Baixar Excel",
                 data=buffer.getvalue(),
-                file_name="relatorio_confeccao.xlsx",
+                file_name="relatorio_Confecção.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
             
